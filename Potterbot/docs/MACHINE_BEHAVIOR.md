@@ -36,11 +36,11 @@ PrusaSlicer Preview draws each move as a rounder tube than the real 1.5 mm × no
 
 ## Retraction
 
-Official Cura **3D Potter Standard** stores `retraction_amount = 1000` / `retraction_speed = 1000` but sets `retraction_enable = False`. Known-good jobs never retract mid-print.
+Official Cura **3D Potter Standard** stores `retraction_amount = 1000` / `retraction_speed = 1000` but sets `retraction_enable = False`. Known-good jobs never retract mid-print. After `G28` the head is at **X420 Y0 Z400**. Cura’s first move is a single `G0 … Z1.5` from that pose.
 
 The [3D Potter FAQ](https://3dpotter.com/faq/) mid-print recipe (1000 mm at 1000 mm/s) exceeds `config.g` `M203 E22000` (367 mm/s) and is what stalled the ram motor in Cura.
 
-This bundle puts retract on the **printer** (every print profile): relative `E-80` at 17 mm/s, Z-hop 5 mm (FAQ lift, not FAQ speed), extra prime 10 mm, only if travel ≥ 15 mm. Spiral vase walls do not travel, so they do not fire it. Skirt, bottoms, infill, and hops between objects do. End G-code is still `G0 Z10 E-500 F1000`. Experimental.
+This bundle keeps mid-print retract and Z-hop **off** (`retract_length = 0`, `retract_lift = 0`). A printer `E-80` + 5 mm hop after `G28` retracted for several seconds at Z400, then treated `G1 Z6.5` as a hop from layer height instead of a drop from the column top. End G-code is still `G0 Z10 E-500 F1000`. `retract_speed` stays 17 mm/s so a manual enable in the UI is not the FAQ 1000 mm/s.
 
 ## Bed vs bat
 
