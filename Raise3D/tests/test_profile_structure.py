@@ -26,7 +26,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertIn("vendor", self.ini)
         self.assertEqual(self.ini["vendor"]["name"], "Raise3D (experimental)")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.42")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.43")
         self.assertNotIn("printer_model:PRO2PLUS_HS", self.ini)
         self.assertIn("printer_model:PRO2PLUS_HS_DUAL", self.ini)
         self.assertNotIn("printer:Raise3D Pro2 Plus Hyper Speed 0.4 Left", self.ini)
@@ -231,7 +231,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(pla["filament_max_volumetric_speed"], "15")
         pla_start = pla.get("start_filament_gcode") or self.ini["filament:*common*"]["start_filament_gcode"]
         self.assertIn("SET_PRESSURE_ADVANCE", pla_start)
-        self.assertIn("ADVANCE=0.05", pla_start)
+        self.assertIn("ADVANCE=0.068", pla_start)
         petg_start = self.ini["filament:PETG Raise3D"].get("start_filament_gcode") or self.ini["filament:*common*"]["start_filament_gcode"]
         self.assertNotIn("SET_PRESSURE_ADVANCE", petg_start)
         self.assertEqual(self.ini["filament:*common*"]["filament_cost"], "100")
