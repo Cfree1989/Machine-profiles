@@ -9,7 +9,7 @@ VENDOR = ROOT / "vendor" / "Potterbot.ini"
 BUNDLE = ROOT / "profiles" / "Potterbot-9-bundle.ini"
 IDX = ROOT / "vendor" / "Potterbot.idx"
 
-CONFIG_VERSION = "0.1.12"
+CONFIG_VERSION = "0.1.13"
 NOZZLES = list(range(1, 11))
 BED_X = 381  # 15 in bat; firmware X travel is 420
 BED_Y = 360  # firmware Y travel (bat is 381)
@@ -27,6 +27,8 @@ END_RETRACT = 500
 # Do not use the 3D Potter FAQ 1000 mm @ 1000 mm/s recipe (exceeds M203 E).
 # Keep a slow ram speed on the printer so a manual enable in the UI is not 1000.
 RETRACT_SPEED = 17
+# Cura jobs emit no M204, so Duet uses config.g M201 XY/E 3000. Match that.
+ACCEL_XY = 3000
 
 HEADER = """\
 # 3D Potterbot 9 - experimental PrusaSlicer vendor bundle
@@ -207,7 +209,7 @@ def vendor_block() -> str:
             "avoid_crossing_perimeters = 0",
             "bottom_fill_pattern = archimedeanchords",
             "bottom_solid_min_thickness = 0",
-            "bridge_acceleration = 1000",
+            f"bridge_acceleration = {ACCEL_XY}",
             "bridge_flow_ratio = 1",
             "bridge_speed = 40",
             "brim_separation = 0",
@@ -216,19 +218,19 @@ def vendor_block() -> str:
             "compatible_printers_condition = printer_notes=~/.*PRINTER_VENDOR_POTTERBOT.*/ and printer_notes=~/.*PRINTER_MODEL_9.*/",
             "complete_objects = 0",
             "duplicate_distance = 12",
-            "default_acceleration = 1000",
+            f"default_acceleration = {ACCEL_XY}",
             "dont_support_bridges = 1",
             "elefant_foot_compensation = 0",
             "enable_dynamic_overhang_speeds = 0",
             "ensure_vertical_shell_thickness = 0",
-            "external_perimeter_acceleration = 1000",
+            f"external_perimeter_acceleration = {ACCEL_XY}",
             f"external_perimeter_speed = {PRINT_SPEED}",
             "external_perimeters_first = 0",
             "extra_perimeters = 0",
             "fill_angle = 45",
             "fill_density = 0%",
             "fill_pattern = grid",
-            "first_layer_acceleration = 500",
+            f"first_layer_acceleration = {ACCEL_XY}",
             "first_layer_acceleration_over_raft = 0",
             f"first_layer_infill_speed = {BOTTOM_SPEED}",
             f"first_layer_speed = {PRINT_SPEED}",
@@ -238,7 +240,7 @@ def vendor_block() -> str:
             "gcode_comments = 1",
             "gcode_label_objects = 0",
             "gcode_resolution = 0.1",
-            "infill_acceleration = 1000",
+            f"infill_acceleration = {ACCEL_XY}",
             "infill_anchor = 0",
             "infill_anchor_max = 0",
             "infill_every_layers = 1",
@@ -248,14 +250,14 @@ def vendor_block() -> str:
             "max_print_speed = 85",
             "max_volumetric_speed = 0",
             "min_skirt_length = 0",
-            "notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms are Archimedean chords; tops are rectilinear; sparse infill is grid. 15% infill overlap so bottoms meet the wall. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Mid-print retract and Z-hop are off (official Cura). After G28 the head is at Z400; the first travel must include Z down to the layer. End G-code lifts Z 10 mm and pulls E-500.",
+            "notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms are Archimedean chords; tops are rectilinear; sparse infill is grid. 15% infill overlap so bottoms meet the wall. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). Mid-print retract and Z-hop are off (official Cura). After G28 the head is at Z400; the first travel must include Z down to the layer. End G-code lifts Z 10 mm and pulls E-500.",
             f"layer_height = {fmt_num(LAYER_HEIGHT)}",
             f"first_layer_height = {fmt_num(LAYER_HEIGHT)}",
             "only_retract_when_crossing_perimeters = 1",
             "ooze_prevention = 0",
             "output_filename_format = {input_filename_base}_{layer_height}mm_{printer_variant}n_{print_time}.gcode",
             "overhangs = 0",
-            "perimeter_acceleration = 1000",
+            f"perimeter_acceleration = {ACCEL_XY}",
             "perimeter_extruder = 1",
             "perimeter_generator = arachne",
             f"perimeter_speed = {PRINT_SPEED}",
@@ -269,7 +271,7 @@ def vendor_block() -> str:
             f"skirt_distance = {SKIRT_GAP}",
             "slice_closing_radius = 0.049",
             f"small_perimeter_speed = {PRINT_SPEED}",
-            "solid_infill_acceleration = 1000",
+            f"solid_infill_acceleration = {ACCEL_XY}",
             "solid_infill_below_area = 0",
             "solid_infill_every_layers = 0",
             "solid_infill_extruder = 1",
@@ -280,12 +282,12 @@ def vendor_block() -> str:
             "thick_bridges = 0",
             "thin_walls = 0",
             "top_fill_pattern = rectilinear",
-            "top_solid_infill_acceleration = 1000",
+            f"top_solid_infill_acceleration = {ACCEL_XY}",
             f"top_solid_infill_speed = {BOTTOM_SPEED}",
             "top_solid_layers = 0",
             "top_solid_min_thickness = 0",
-            "travel_acceleration = 2000",
-            "travel_short_distance_acceleration = 500",
+            f"travel_acceleration = {ACCEL_XY}",
+            f"travel_short_distance_acceleration = {ACCEL_XY}",
             f"travel_speed = {TRAVEL_SPEED}",
             "travel_speed_z = 16",
             "wipe_tower = 0",
@@ -418,8 +420,9 @@ def idx_text() -> str:
         "0.1.10 1 mm nozzle layer is 0.8 mm (width must be greater than height). "
         "Arachne + 15% infill overlap so concentric bottoms do not open up on wide tips.\n"
         "0.1.11 Bottoms are Archimedean chords again. The Preview grid on wide tips is the viewer, not that fill pattern.\n"
-        f"{CONFIG_VERSION} Mid-print retract and Z-hop off (official Cura). After G28 the head is at Z400; "
+        "0.1.12 Mid-print retract and Z-hop off (official Cura). After G28 the head is at Z400; "
         "a slicer E-80 hop was retracting at the top of the column before the first layer.\n"
+        f"{CONFIG_VERSION} Print/travel acceleration 3000 mm/s² to match firmware M201 / Cura jobs (no slower M204 P500).\n"
     )
 
 

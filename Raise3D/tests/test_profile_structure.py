@@ -26,7 +26,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertIn("vendor", self.ini)
         self.assertEqual(self.ini["vendor"]["name"], "Raise3D (experimental)")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.41")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.42")
         self.assertNotIn("printer_model:PRO2PLUS_HS", self.ini)
         self.assertIn("printer_model:PRO2PLUS_HS_DUAL", self.ini)
         self.assertNotIn("printer:Raise3D Pro2 Plus Hyper Speed 0.4 Left", self.ini)
@@ -51,6 +51,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertNotIn(";Filament Name #1: PLA\n", start)
         self.assertNotIn('{"[Raise3D] PLA"}', start)
         self.assertIn("filament_extruder_id", self.ini["filament:*common*"]["start_filament_gcode"])
+        self.assertNotIn("SET_PRESSURE_ADVANCE", self.ini["filament:*common*"]["start_filament_gcode"])
         self.assertEqual(filament["temperature"], "225")
         self.assertEqual(filament["first_layer_temperature"], "215")
         self.assertEqual(filament.get("extrusion_multiplier") or self.ini["filament:*common*"]["extrusion_multiplier"], "0.94")
@@ -228,6 +229,11 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(pla["min_fan_speed"], "50")
         self.assertEqual(pla["max_fan_speed"], "100")
         self.assertEqual(pla["filament_max_volumetric_speed"], "15")
+        pla_start = pla.get("start_filament_gcode") or self.ini["filament:*common*"]["start_filament_gcode"]
+        self.assertIn("SET_PRESSURE_ADVANCE", pla_start)
+        self.assertIn("ADVANCE=0.05", pla_start)
+        petg_start = self.ini["filament:PETG Raise3D"].get("start_filament_gcode") or self.ini["filament:*common*"]["start_filament_gcode"]
+        self.assertNotIn("SET_PRESSURE_ADVANCE", petg_start)
         self.assertEqual(self.ini["filament:*common*"]["filament_cost"], "100")
         self.assertEqual(self.ini["filament:*common*"]["filament_spool_weight"], "135")
         petg = self.ini["filament:PETG Raise3D"]

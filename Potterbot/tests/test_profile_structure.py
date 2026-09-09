@@ -31,7 +31,7 @@ class VendorStructureTests(unittest.TestCase):
     def test_vendor_and_model(self) -> None:
         self.assertEqual(self.ini["vendor"]["name"], "3D Potter (experimental)")
         self.assertEqual(self.ini["vendor"]["repo_id"], "non-prusa-fff")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.12")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.13")
         self.assertEqual(self.ini["printer_model:POTTERBOT9"]["variants"], "1;2;3;4;5;6;7;8;9;10")
         self.assertEqual(self.ini["printer_model:POTTERBOT9"]["default_materials"], "Clay Potterbot")
 
@@ -109,6 +109,11 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(p["skirts"], "3")
         self.assertEqual(p["skirt_distance"], "8")
         self.assertEqual(p["wipe_tower"], "0")
+        self.assertEqual(p["default_acceleration"], "3000")
+        self.assertEqual(p["first_layer_acceleration"], "3000")
+        self.assertEqual(p["travel_acceleration"], "3000")
+        self.assertEqual(p["travel_short_distance_acceleration"], "3000")
+        self.assertEqual(p["perimeter_acceleration"], "3000")
         five = self.ini["print:Vase Hollow @Potterbot 5mm"]
         self.assertEqual(five.get("layer_height") or p["layer_height"], "1.5")
         self.assertEqual(five["extrusion_width"], "5")

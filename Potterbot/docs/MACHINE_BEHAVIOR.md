@@ -7,7 +7,7 @@ Evidence for the PrusaSlicer bundle. Labels are from files in `reference/`.
 - Duet 2 WiFi, RepRapFirmware **2.04RC1** (2019-07-14). DWC screenshots in `reference/dwc/`.
 - `config.g` names the machine **3DP-D9**. Absolute XYZ, **relative E** (`M83`), cold extrusion (`M302 P1`), bed heater off (`M140 H-1`).
 - Drive limits: X 0–420, Y 0–360, Z 0–400. Home: X max, Y min, Z max. After `G28` the head is at **X420 Y0 Z400**.
-- Max feed (mm/s): XY 100, Z 16.67, E 366.67. Accel XY/E 3000, Z 1000. `config.g` comment: keep slicer speeds ≤ 85 mm/s.
+- Max feed (mm/s): XY 100, Z 16.67, E 366.67. Accel XY/E 3000, Z 1000. `config.g` comment: keep slicer speeds ≤ 85 mm/s. The Prusa bundle uses print/travel acceleration **3000** so emitted `M204` matches Cura jobs that rely on these `M201` values.
 - `config.g.bak` is the same file with Z max 200 (older short-column setup).
 
 ## Official slicer settings

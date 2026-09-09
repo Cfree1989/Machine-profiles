@@ -46,3 +46,4 @@ min_slic3r_version = 2.9.0
 0.5.39 PLA first layer 215 C (later layers stay 230 C).
 0.5.40 After purge at Z15, travel to first print XY then drop Z (ideaMaker). PrusaSlicer was dropping Z at the purge.
 0.5.41 PLA later layers 225 C (first layer stays 215 C).
+0.5.42 PLA Raise3D filament start G-code sets Klipper pressure advance 0.05 (operator T0 Garethky pattern). Other materials unchanged.

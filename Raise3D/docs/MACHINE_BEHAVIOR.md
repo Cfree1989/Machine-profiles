@@ -41,7 +41,7 @@ This profile is **experimental**. It is not production-ready.
 | First-layer nozzle / bed | `M109 T0 S230` / `M190 S60` | Confirmed in ideaMaker. PrusaSlicer PLA preset is **215 °C first / 225 °C later / 60 °C bed**. |
 | First layer height | 0.300 mm then 0.200 mm | Confirmed in ideaMaker. PrusaSlicer **0.20mm Hyper Speed** uses **0.30 mm** first layer at **50 mm/s** (walls and infill), accel 2000. `skirts = 0`. Start G-code already purges. |
 | Copperhead hotends | Not mentioned in G-code | Assumption (operator-stated hardware). Sequential gantry height **80 mm** vs ideaMaker stock Pro2 Plus HS **65 mm**. |
-| PLA temps / flow / retract | ideaMaker 230 °C / 94% / 1.5 mm at F2400 | PrusaSlicer PLA Raise3D: 215 °C first / 225 °C later, multiplier 0.94, retract 1.5 mm / 40 mm/s. Dual standby remains 180 °C. |
+| PLA temps / flow / retract | ideaMaker 230 °C / 94% / 1.5 mm at F2400 | PrusaSlicer PLA Raise3D: 215 °C first / 225 °C later, multiplier 0.94, retract 1.5 mm / 40 mm/s. Dual standby remains 180 °C. Klipper `SET_PRESSURE_ADVANCE ADVANCE=0.05` from operator T0 Garethky pattern (T1 uses the same value until measured). |
 
 ## Geometry
 
