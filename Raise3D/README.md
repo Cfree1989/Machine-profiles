@@ -16,7 +16,7 @@ Printer workflow: slice on the PC → copy `.gcode` to USB → start from RaiseT
 
 One printer, two 0.4 mm tools (T0 left, T1 right), like XL 2-tool. Assign filament to both slots. Print left-only, right-only, or both: unused tools are skipped via `is_extruder_used`. The printer firmware applies the ~25 mm X nozzle offset — PrusaSlicer offset is `0x0,0x0` so it is not applied twice. Wipe tower is on for dual-color: PrusaSlicer places and shapes it (relative E / `M83`). Do not copy ideaMaker tower coordinates.
 
-Print is a single **0.20mm Hyper Speed** preset measured from this machine’s ideaMaker jobs: 0.20 mm layers, 0.30 mm first layer at 50 mm/s, 0.40 mm lines (0.48 first), walls 150, infill/solid 120, tops 100, travel 150, accel 2000/5000. PLA is first layer 215 °C / later layers 225 °C, 94% flow, fan 0 / 50% / 100%. Other filaments keep the operator `* XL` temps, cooling, and PETG/TPU retract; volumetric is `min(XL, 15)` (TPU 2.5, PA-CF 8). Dual unused-nozzle standby stays **180 °C**. Filament presets are compatible only with this Dual 0.4 printer.
+Print is a single **0.20mm Hyper Speed** preset measured from this machine’s ideaMaker jobs: 0.20 mm layers, 0.30 mm first layer at 50 mm/s, 0.40 mm lines (0.48 first), walls 150, infill/solid 120, tops 100, travel 150, accel 2000/5000. PLA is first layer 215 °C / later layers 225 °C, 100% flow (operator Ellis EM), fan 0 / 50% / 100%. Other filaments keep the operator `* XL` temps, cooling, and PETG/TPU retract; volumetric is `min(XL, 15)` (TPU 2.5, PA-CF 8). Dual unused-nozzle standby stays **180 °C**. Filament presets are compatible only with this Dual 0.4 printer.
 
 ## Install
 
@@ -89,7 +89,7 @@ Evidence labels: `docs/MACHINE_BEHAVIOR.md`
 
 - Copying `M99123` from the ideaMaker file enables Hyper Speed on the touchscreen (forum reports are mixed).
 - `;Filament Name #1: [Raise3D] PLA` (and `#2` on Dual) when slicing PLA matches the name loaded on **this** printer. Other materials emit `[Raise3D] PETG`, `[Raise3D] TPU`, `[Raise3D] ASA`, `[Raise3D] PA`, `[Raise3D] ABS`. If a slot was renamed, change the slot so it matches exactly.
-- PLA at 215 °C first layer / 225 °C later layers / 94% flow / 60 °C bed. ideaMaker `[Raise3D] PLA` files used 230 °C throughout. PETG/TPU/ASA/PA-CF/ABS-GF temps, cooling, and PETG/TPU retract still match the operator `* XL` presets; volumetric is min(XL, Hyper FFF L1 15 mm³/s). Dual standby stays 180 °C from Multicolor (filament idle is not used in Raise3D tool-change G-code).
+- PLA at 215 °C first layer / 225 °C later layers / 100% flow / 60 °C bed. ideaMaker `[Raise3D] PLA` files used 230 °C / 94% throughout. PETG/TPU/ASA/PA-CF/ABS-GF temps, cooling, and PETG/TPU retract still match the operator `* XL` presets; volumetric is min(XL, Hyper FFF L1 15 mm³/s). Dual standby stays 180 °C from Multicolor (filament idle is not used in Raise3D tool-change G-code).
 - `SET_VELOCITY_LIMIT` print 2000 / travel 5000 (including first layer and short travel) after converting PrusaSlicer `M204 S`. Cadence will not match ideaMaker’s ~10k switches exactly.
 - Print speeds follow the ideaMaker job: walls 150, infill/solid 120, tops 100, first layer 50. PrusaSlicer cannot emit the 50→75→100→125→150 ramp on layers 0–4. Bridge 30 mm/s at 90% flow is not in those files (no `;TYPE:BRIDGE`).
 - `M2000` pause (community; not in the ideaMaker file).

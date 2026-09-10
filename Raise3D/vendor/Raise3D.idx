@@ -48,3 +48,4 @@ min_slic3r_version = 2.9.0
 0.5.41 PLA later layers 225 C (first layer stays 215 C).
 0.5.42 PLA Raise3D filament start G-code sets Klipper pressure advance 0.05 (operator T0 Garethky pattern). Other materials unchanged.
 0.5.43 PLA PA 0.068 from operator T0 Ellis corner pattern (replaces 0.05 from the Garethky line test).
+0.5.44 PLA extrusion multiplier 1.00 from operator Ellis EM cubes (replaces ideaMaker 0.94).
