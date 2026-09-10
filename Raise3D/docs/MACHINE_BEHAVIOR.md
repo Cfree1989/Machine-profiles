@@ -39,7 +39,7 @@ This profile is **experimental**. It is not production-ready.
 | Filament diameter | 1.75 mm | Confirmed |
 | Filament compensation | 94% (`M221 T0 S94.00`) | Confirmed in ideaMaker. PrusaSlicer PLA preset is multiplier **1.00** from operator Ellis EM cubes. |
 | First-layer nozzle / bed | `M109 T0 S230` / `M190 S60` | Confirmed in ideaMaker. PrusaSlicer PLA preset is **215 °C first / 225 °C later / 60 °C bed**. |
-| First layer height | 0.300 mm then 0.200 mm | Confirmed in ideaMaker. PrusaSlicer **0.20mm Hyper Speed** uses **0.30 mm** first layer at **50 mm/s** (walls and infill), accel 2000. `skirts = 0`. Start G-code already purges. |
+| First layer height | 0.300 mm then 0.200 mm | Confirmed in ideaMaker. PrusaSlicer **0.20mm Hyper Speed** uses **0.30 mm** first layer at **50 mm/s** (walls and infill), first-layer accel **5000** from `Compensation Test.gcode`. `skirts = 0`. Start G-code already purges. |
 | Copperhead hotends | Not mentioned in G-code | Assumption (operator-stated hardware). Sequential gantry height **80 mm** vs ideaMaker stock Pro2 Plus HS **65 mm**. |
 | PLA temps / flow / retract | ideaMaker 230 °C / 94% / 1.5 mm at F2400 | PrusaSlicer PLA Raise3D: 215 °C first / 225 °C later, multiplier **1.00** (operator Ellis EM cubes; ideaMaker was 0.94), retract 1.5 mm / 40 mm/s. Dual standby remains 180 °C. Klipper `SET_PRESSURE_ADVANCE ADVANCE=0.068` from operator T0 Ellis pattern (Garethky lines were 0.05). T1 uses the same value until measured. |
 
@@ -72,7 +72,7 @@ This profile is **experimental**. It is not production-ready.
 | `T0` | Left and dual files | Confirmed |
 | `T1` | Right-only and dual files | Confirmed in `RightonlyExtruder.gcode` and `MulticolorRaise3d.gcode` |
 | `G10` / `G11` | No | |
-| `SET_VELOCITY_LIMIT` | `ACCEL=5000`, `ACCEL=2000`, `SQUARE_CORNER_VELOCITY=10` | Confirmed Klipper. `MulticolorRaise3d.gcode`: 5469×5000 and 5468×2000 (print vs travel). PrusaSlicer 2.9.6 emits `M204 S` instead; post-process converts to `SET_VELOCITY_LIMIT`. Print profile: 2000 print / 5000 travel (including first layer and short travel). |
+| `SET_VELOCITY_LIMIT` | `ACCEL=5000`, `ACCEL=2000`, `SQUARE_CORNER_VELOCITY=10` | Confirmed Klipper. `Compensation Test.gcode` (ideaMaker 5.5.0.8810): walls/infill/first layer stay **5000**; later solid/top drop to **2000**. `MulticolorRaise3d.gcode` was 5469×5000 / 5468×2000 because that job was almost all solid vs travel. PrusaSlicer 2.9.6 emits `M204 S`; post-process converts. Print profile: walls/infill/first 5000, solid/top 2000, travel 5000. |
 | `M221` | Start `S94`, end `S100` | Confirmed |
 | `M106` | `S0`, `S128`, `S255` | Confirmed; first layer fan off |
 
@@ -126,7 +126,7 @@ These are 2022 **Marlin** PrusaSlicer profiles for pre-Hyper Speed Pro2/Pro2 Plu
 1. Whether copying `M99123` plus `;Printer Type: RAISE3D Pro2 Plus - Hyper Speed` produces the touchscreen Hyper Speed checkmark.
 2. Printer slot names must still be `[Raise3D] PLA` (G-code now emits that; a renamed slot will still warn).
 3. RaiseTouch firmware version.
-4. Whether PrusaSlicer’s 2000/5000 `SET_VELOCITY_LIMIT` cadence (from converted `M204`) matches ideaMaker ringing. Klipper flavor cannot emit SET_VELOCITY_LIMIT natively.
+4. Whether PrusaSlicer’s per-feature `SET_VELOCITY_LIMIT` (5000 walls/infill/first, 2000 solid/top, 5000 travel, from converted `M204`) matches `Compensation Test.gcode` ringing. Klipper flavor cannot emit SET_VELOCITY_LIMIT natively.
 5. Pause/resume (`M2000`) on this Hyper Speed firmware.
 6. Right nozzle and dual-head lift: dual G-code confirmed; right-only G-code confirmed (`RightonlyExtruder.gcode`). Confirm firmware XY offset (do not also slice 25 mm). Dual purge is in-place `E10`/`E-11` at home, then XY to the first print point at Z15, then Z. Right-only uses the same `X80 Y0` wipe as left after homing on T1. Keep T1 paths and the wipe tower off X < 25 mm; measure the real keep-out. Watch Stage 6–7 for collisions and ~25 mm shift.
 7. Dual tool-change: PrusaSlicer wipe tower (default X50 Y140; you can drag) vs ideaMaker’s octagon at ~X50 Y241 in `MulticolorRaise3d.gcode`. Confirm the tower is where you put it and ooze does not hit the part.

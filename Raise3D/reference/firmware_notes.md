@@ -6,7 +6,7 @@
 - `;Printer Type: RAISE3D Pro2 Plus - Hyper Speed`
 - `;Firmware: Klipper`
 - Hyper Speed marker: First line is `M99123` plus payload
-- ideaMaker accel: `SET_VELOCITY_LIMIT ACCEL=2000.00` (print) / `5000.00` (travel). PrusaSlicer 2.9.6 Klipper flavor writes `M204 S` instead; `scripts/ensure_m99123_first.py` converts it and inserts next-tool `M104` before swap `M109`.
+- ideaMaker accel from `Compensation Test.gcode` (5.5.0.8810): `SET_VELOCITY_LIMIT ACCEL=5000` on walls/infill/first layer, `2000` on later solid/top. Older `MulticolorRaise3d.gcode` was 2000 print / 5000 travel because that job was solid-heavy. PrusaSlicer 2.9.6 Klipper flavor writes `M204 S` instead; `scripts/ensure_m99123_first.py` converts it and inserts next-tool `M104` before swap `M109`.
 - `;Dimension: 305.000 305.000 605.000 0.400 0.400`
 
 ## Dual (experimental)
