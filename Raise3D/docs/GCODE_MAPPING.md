@@ -26,8 +26,8 @@ This mapping is **experimental**. Physical Stage 2–7 tests are still required.
 | `;Printer Type: RAISE3D Pro2 Plus - Hyper Speed` | Same | Copied | Confirmed in this file. |
 | `;Firmware: Klipper` | Same | Copied | Confirmed in this file. |
 | `;Bounding Box:…` | `ensure_m99123_first.py` writes object AABB after `;Firmware:`: XY from G0/G1 after `M1001`, Z from max `;Z:`. Not `{max_layer_z}` in start G-code. Rewrites a prior box when it is not valid ideaMaker order (`xmax < xmin` or `ymax < ymin`). | Copied dialect (post-export) | `{max_layer_z}` is not valid in start G-code ([placeholders](https://help.prusa3d.com/article/list-of-placeholders_205643)). ideaMaker writes `xmin xmax ymin ymax zmin zmax` of the print (not the full bed). |
-| `M221 T0 S94.00` | `M221 T0 S{extrusion_multiplier[0]*100}` with PLA `extrusion_multiplier = 1` | Changed | ideaMaker `[Raise3D] PLA` used 94%. Operator Ellis EM cubes on this machine use 100%. End G-code still resets `M221 … S100`. |
-| `M140 S60` / `M104 T0 S230` / `M109 T0 S230` / `T0` / `M190 S60` | Same commands with `{first_layer_bed_temperature[0]}` and `{first_layer_temperature[0]}` (PLA defaults **215 first / 225 later / 60 bed**) | Copied | Dual start still heats T0 and T1 when `is_extruder_used`. Left-only skips T1. Right-only heats **T1 only** then `T1` before `M190`/`G28` (`RightonlyExtruder.gcode`). ideaMaker files used 230 °C. |
+| `M221 T0 S94.00` | PLA: `M221 T0 S94` (and T1) from filament_type PLA, even though `extrusion_multiplier` stays **1.00**. Other materials still use `S{extrusion_multiplier*100}`. `ensure_m99123_first.py` then scales first-layer print E ×0.90 and top-solid E ×1.06 | Copied dialect | ideaMaker writes per-feature FLOW into E and applies filament 94% with M221. Setting multiplier to 0.94 *and* M221 S94 would double-count. Compensation Test.gcode first-wall E matches 90% of nominal, not 84.6% — M221 supplies the 94%. End G-code still resets `M221 … S100`. |
+| `M140 S60` / `M104 T0 S230` / `M109 T0 S230` / `T0` / `M190 S60` | Same commands with `{first_layer_bed_temperature[0]}` and `{first_layer_temperature[0]}` (PLA defaults **230 / 230 / 60 bed**) | Copied | Dual start still heats T0 and T1 when `is_extruder_used`. Left-only skips T1. Right-only heats **T1 only** then `T1` before `M190`/`G28` (`RightonlyExtruder.gcode`). |
 | `G21` `G90` `M82` `M107` | `G21` `G90` `M83` `M107` | Changed | ideaMaker uses absolute E. PrusaSlicer wipe tower requires relative E, so the Dual profile emits `M83`. |
 | `G28 X0 Y0` then `G28 Z0` | Same | Copied | Do not replace with `G28` or add `G29`. Left/dual home on `T0`. Right-only homes on `T1`. |
 | `G1 Z15.0 F300` | Same | Copied | Clearance before purge. |
@@ -55,7 +55,7 @@ Source: `MulticolorRaise3d.gcode` for dual; `LeftonlyExtruder.gcode` / `Rightonl
 
 | Dual behavior | ideaMaker (`MulticolorRaise3d.gcode`) | PrusaSlicer | Action |
 | --- | --- | --- | --- |
-| Heat / flow both tools | `M221`/`M104`/`M109` T0 and T1 at 230 °C, `M221 S94` | Same commands gated with `is_extruder_used`; PLA defaults 215 °C first layer / 225 °C later and 1.00 flow | Changed (operator EM) |
+| Heat / flow both tools | `M221`/`M104`/`M109` T0 and T1 at 230 °C, `M221 S94` | Same commands gated with `is_extruder_used`; PLA **230 °C** and M221 S94; slicer multiplier 1.00 | Copied |
 | Home | Dual/left: `T0` then `G28`. Right-only: `T1` then `G28` | `{if is_extruder_used[0]}T0{else}T1{endif}` before `M190`/`G28` | Copied per file |
 | Dual purge | `T1`: `G1 F200 E10` then `G1 F200 E-11.00`. `T0`: `G1 F200 E10` (no XY wipe). Then print-start XY at Z15, then Z | Same in-place prime. First approach after `M1001` is XY then Z (post-process) | Prime copied. Do not drop Z at home |
 | Left-only purge | `LeftonlyExtruder.gcode`: blob + `G1 X20 Y0 F140 E30`, then print-start XY at Z15, then Z | Blob + `G1 X80 Y0 F140 E1`. First approach XY then Z | X80 from Stage 3 (fan hit the purge at X20 when Z dropped there) |
@@ -95,5 +95,4 @@ Source: `MulticolorRaise3d.gcode` for dual; `LeftonlyExtruder.gcode` / `Rightonl
 - Hyper Speed PLA material profile
 - ideaMaker dual-file skirt at 15 mm/s (start G-code already purges; no skirt)
 - ideaMaker 50→150 speed ramp on layers 0–4 (PrusaSlicer only has first-layer speed)
-- ideaMaker first-layer FLOW 90% and top FLOW 106% (no matching PrusaSlicer knobs; PLA multiplier is operator Ellis EM **1.00**, not ideaMaker 0.94)
 - `G29` mesh, `M92` steps, `M218` offsets

@@ -37,11 +37,11 @@ This profile is **experimental**. It is not production-ready.
 | Tools used | Left: `T0` only. Right: `T1` only. Dual: `T0` and `T1`, many swaps | Confirmed. Dual profile gates unused tools with `is_extruder_used` |
 | Filament name | `[Raise3D] ` + `filament_type` | Confirmed in ideaMaker for PLA as `[Raise3D] PLA`. Other materials emit PETG/TPU/ASA/PA/ABS. Wizard presets are `* Raise3D` and are compatible only with this Dual printer. |
 | Filament diameter | 1.75 mm | Confirmed |
-| Filament compensation | 94% (`M221 T0 S94.00`) | Confirmed in ideaMaker. PrusaSlicer PLA preset is multiplier **1.00** from operator Ellis EM cubes. |
-| First-layer nozzle / bed | `M109 T0 S230` / `M190 S60` | Confirmed in ideaMaker. PrusaSlicer PLA preset is **215 °C first / 225 °C later / 60 °C bed**. |
+| Filament compensation | 94% (`M221 T0 S94.00`) | Confirmed in ideaMaker. PrusaSlicer PLA emits **M221 S94** with **extrusion_multiplier 1.00**. Post-process scales first-layer print E ×0.90 and top-solid E ×1.06. |
+| First-layer nozzle / bed | `M109 T0 S230` / `M190 S60` | Confirmed in ideaMaker. PrusaSlicer PLA preset is **230 °C / 60 °C bed**. |
 | First layer height | 0.300 mm then 0.200 mm | Confirmed in ideaMaker. PrusaSlicer **0.20mm Hyper Speed** uses **0.30 mm** first layer at **50 mm/s** (walls and infill), first-layer accel **5000** from `Compensation Test.gcode`. `skirts = 0`. Start G-code already purges. |
 | Copperhead hotends | Not mentioned in G-code | Assumption (operator-stated hardware). Sequential gantry height **80 mm** vs ideaMaker stock Pro2 Plus HS **65 mm**. |
-| PLA temps / flow / retract | ideaMaker 230 °C / 94% / 1.5 mm at F2400 | PrusaSlicer PLA Raise3D: 215 °C first / 225 °C later, multiplier **1.00** (operator Ellis EM cubes; ideaMaker was 0.94), retract 1.5 mm / 40 mm/s. Dual standby remains 180 °C. Klipper `SET_PRESSURE_ADVANCE ADVANCE=0.068` from operator T0 Ellis pattern (Garethky lines were 0.05). T1 uses the same value until measured. |
+| PLA temps / flow / retract | ideaMaker 230 °C / 94% / 1.5 mm at F2400 | PrusaSlicer PLA Raise3D: **230 °C** / M221 S94 / retract 1.5 mm / 40 mm/s. Dual standby remains 180 °C. No `SET_PRESSURE_ADVANCE` (ideaMaker UI off; firmware default remains). |
 
 ## Geometry
 
@@ -131,4 +131,4 @@ These are 2022 **Marlin** PrusaSlicer profiles for pre-Hyper Speed Pro2/Pro2 Plu
 6. Right nozzle and dual-head lift: dual G-code confirmed; right-only G-code confirmed (`RightonlyExtruder.gcode`). Confirm firmware XY offset (do not also slice 25 mm). Dual purge is in-place `E10`/`E-11` at home, then XY to the first print point at Z15, then Z. Right-only uses the same `X80 Y0` wipe as left after homing on T1. Keep T1 paths and the wipe tower off X < 25 mm; measure the real keep-out. Watch Stage 6–7 for collisions and ~25 mm shift.
 7. Dual tool-change: PrusaSlicer wipe tower (default X50 Y140; you can drag) vs ideaMaker’s octagon at ~X50 Y241 in `MulticolorRaise3d.gcode`. Confirm the tower is where you put it and ooze does not hit the part.
 8. Relative E (`M83`) vs ideaMaker `M82` — inspect first dual slice for mixed E mode.
-9. Volumetric limit is `min(operator XL, Hyper FFF L1 15 mm³/s)`. PLA is 215 °C first / 225 °C later / 100% flow / fan 0→50%→100% (ideaMaker files used 230 °C / 94%). Other materials still use the operator `* XL` presets. Dual standby stays 180 °C; filament idle is not emitted in tool-change G-code.
+9. Volumetric limit is `min(operator XL, Hyper FFF L1 15 mm³/s)`. PLA is 230 °C / M221 S94 / first-layer FLOW 90% / top FLOW 106% / fan 0→50%→100%. Other materials still use the operator `* XL` presets. Dual standby stays 180 °C; filament idle is not emitted in tool-change G-code.
