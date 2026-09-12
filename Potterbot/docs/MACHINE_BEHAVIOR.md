@@ -24,7 +24,7 @@ From `reference/cura/3D Potter Standard.3mf` (Cura machine) and the Cura 5.12 jo
 | Skirt | 3 loops, 8 mm gap |
 | Spiral vase | on |
 | Infill / top | 0 / 0 |
-| Retract during print | off |
+| Retract during print | off (vase printers); 80 mm / 80 mm/s / 5 mm hop (Retract printers) |
 | Temps / fan | 0 / off |
 | Filament diameter | 1.75 mm (volumetric model for the ram) |
 
@@ -40,7 +40,7 @@ Official Cura **3D Potter Standard** stores `retraction_amount = 1000` / `retrac
 
 The [3D Potter FAQ](https://3dpotter.com/faq/) mid-print recipe (1000 mm at 1000 mm/s) exceeds `config.g` `M203 E22000` (367 mm/s) and is what stalled the ram motor in Cura.
 
-This bundle turns mid-print retract **on**: `retract_length = 80`, `retract_speed = 80`, `deretract_speed = 80`, `retract_lift = 5`, extra restart **0**, wipe **off**. Not the FAQ 1000 mm/s. After `G28`, start G-code drops to **Z10** (`G1 Z10 F1000`) so the first slicer retract+hop is near the bat. 0.1.11’s `E-80` hop without that drop ran the ram at Z400, then treated `G1 Z6.5` as a hop from layer height. End G-code is still `G0 Z10 E-500 F1000`.
+This bundle splits printers. **1mm–10mm Nozzle** (vase) keep mid-print retract **off** (`retract_length = 0`, `retract_lift = 0`) and official Cura start (`G28` only). **1mm–10mm Nozzle Retract** (Infill) use `retract_length = 80`, `retract_speed = 80`, `deretract_speed = 80`, `retract_lift = 5`, `retract_lift_above` = first layer + 0.1 mm (**1.6** on 1.5 mm Fine, **0.9** on the 1 mm tip) so layer 0 / the skirt does not hop. Extra restart **0**, wipe **off**. Not the FAQ 1000 mm/s. After `G28`, Retract start G-code drops to **Z10** (`G1 Z10 F1000`) so the first slicer retract is near the bat. 0.1.11’s `E-80` hop without that drop ran the ram at Z400, then treated `G1 Z6.5` as a hop from layer height. End G-code is still `G0 Z10 E-500 F1000` on both.
 
 ## Bed vs bat
 

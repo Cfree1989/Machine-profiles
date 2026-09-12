@@ -31,9 +31,11 @@ class VendorStructureTests(unittest.TestCase):
     def test_vendor_and_model(self) -> None:
         self.assertEqual(self.ini["vendor"]["name"], "3D Potter (experimental)")
         self.assertEqual(self.ini["vendor"]["repo_id"], "non-prusa-fff")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.14")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.16")
         self.assertEqual(self.ini["printer_model:POTTERBOT9"]["variants"], "1;2;3;4;5;6;7;8;9;10")
         self.assertEqual(self.ini["printer_model:POTTERBOT9"]["default_materials"], "Clay Potterbot")
+        self.assertEqual(self.ini["printer_model:POTTERBOT9R"]["name"], "3D Potterbot 9 Retract (experimental)")
+        self.assertEqual(self.ini["printer_model:POTTERBOT9R"]["variants"], "1;2;3;4;5;6;7;8;9;10")
 
     def test_printer_common_is_cold_rrf(self) -> None:
         common = self.ini["printer:*common*"]
@@ -41,8 +43,8 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(common["host_type"], "duet")
         self.assertEqual(common["autoemit_temperature_commands"], "0")
         self.assertEqual(common["use_relative_e_distances"], "1")
-        self.assertEqual(common["retract_length"], "80")
-        self.assertEqual(common["retract_lift"], "5")
+        self.assertEqual(common["retract_length"], "0")
+        self.assertEqual(common["retract_lift"], "0")
         self.assertEqual(common["retract_layer_change"], "0")
         self.assertEqual(common["retract_speed"], "80")
         self.assertEqual(common["deretract_speed"], "80")
@@ -50,7 +52,7 @@ class VendorStructureTests(unittest.TestCase):
         start = common["start_gcode"].replace("\\n", "\n")
         end = common["end_gcode"].replace("\\n", "\n")
         self.assertIn("G28 ;Home all", start)
-        self.assertIn("G1 Z10 F1000", start)
+        self.assertNotIn("G1 Z10 F1000", start)
         self.assertNotIn("M104", start)
         self.assertNotIn("M109", start)
         self.assertIn("G0 Z10 E-500 F1000", end)
@@ -68,6 +70,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(common["first_layer_height"], "1.5")
         for nozzle in range(1, 11):
             self.assertIn(f"printer:{nozzle}mm Nozzle", self.ini)
+            self.assertIn(f"printer:{nozzle}mm Nozzle Retract", self.ini)
             printer = self.ini[f"printer:{nozzle}mm Nozzle"]
             layer = min(1.5, 0.8 * float(nozzle))
             self.assertGreaterEqual(float(printer["max_layer_height"]), layer)
@@ -93,6 +96,13 @@ class VendorStructureTests(unittest.TestCase):
             else:
                 self.assertNotIn("layer_height", hollow)
             self.assertIn(f"nozzle_diameter[0]=={nozzle}", hollow["compatible_printers_condition"])
+            self.assertIn("CLAY_TRAVEL_OPEN", hollow["compatible_printers_condition"])
+            infill = self.ini[f"print:Infill @Potterbot {nozzle}mm"]
+            self.assertIn("CLAY_TRAVEL_RETRACT", infill["compatible_printers_condition"])
+            self.assertIn("CLAY_TRAVEL_OPEN", printer["printer_notes"])
+            retract_printer = self.ini[f"printer:{nozzle}mm Nozzle Retract"]
+            self.assertIn("CLAY_TRAVEL_RETRACT", retract_printer["printer_notes"])
+            self.assertNotIn("CLAY_TRAVEL_OPEN", retract_printer["printer_notes"])
 
     def test_official_cura_speeds_and_shell(self) -> None:
         p = self.ini["print:*common*"]
@@ -120,7 +130,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(five.get("layer_height") or p["layer_height"], "1.5")
         self.assertEqual(five["extrusion_width"], "5")
 
-    def test_mid_print_retract_near_bed(self) -> None:
+    def test_vase_unretracted_infill_uses_retract_printer(self) -> None:
         infill = self.ini["print:Infill @Potterbot 5mm"]
         self.assertEqual(infill["spiral_vase"], "0")
         self.assertEqual(infill["fill_density"], "15%")
@@ -128,22 +138,32 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(infill["bottom_solid_layers"], "3")
         self.assertEqual(infill["top_solid_layers"], "3")
         self.assertEqual(infill["avoid_crossing_perimeters"], "1")
-        printer = self.ini["printer:*common*"]
-        self.assertEqual(printer["retract_length"], "80")
-        self.assertEqual(printer["retract_lift"], "5")
-        self.assertEqual(printer["retract_layer_change"], "0")
-        self.assertEqual(printer["retract_restart_extra"], "0")
-        self.assertEqual(printer["retract_speed"], "80")
-        self.assertEqual(printer["deretract_speed"], "80")
-        self.assertLess(float(printer["retract_speed"]), 85)
-        self.assertNotEqual(printer["retract_speed"], "1000")
-        self.assertNotEqual(printer["retract_length"], "1000")
+        vase = self.ini["printer:5mm Nozzle"]
+        retract = self.ini["printer:5mm Nozzle Retract"]
+        common = self.ini["printer:*common*"]
+        self.assertEqual(vase.get("retract_length") or common["retract_length"], "0")
+        self.assertEqual(vase.get("retract_lift") or common["retract_lift"], "0")
+        self.assertEqual(retract["retract_length"], "80")
+        self.assertEqual(retract["retract_lift"], "5")
+        self.assertEqual(retract["retract_lift_above"], "1.6")
+        self.assertEqual(self.ini["printer:1mm Nozzle Retract"]["retract_lift_above"], "0.9")
+        self.assertEqual(retract["retract_speed"], "80")
+        self.assertEqual(retract["deretract_speed"], "80")
+        self.assertEqual(retract.get("retract_restart_extra") or common["retract_restart_extra"], "0")
+        self.assertLess(float(retract["retract_speed"]), 85)
+        self.assertNotEqual(retract["retract_speed"], "1000")
+        self.assertNotEqual(retract["retract_length"], "1000")
         self.assertNotIn("filament:Clay Potterbot Retract", self.ini)
-        start = printer["start_gcode"].replace("\\n", "\n")
-        self.assertNotIn("E-80", start)
-        self.assertIn("G28 ;Home all", start)
-        self.assertIn("G1 Z10 F1000", start)
-        self.assertLess(start.index("G28 ;Home all"), start.index("G1 Z10 F1000"))
+        vase_start = (vase.get("start_gcode") or common["start_gcode"]).replace("\\n", "\n")
+        retract_start = retract["start_gcode"].replace("\\n", "\n")
+        self.assertNotIn("E-80", vase_start)
+        self.assertNotIn("E-80", retract_start)
+        self.assertNotIn("G1 Z10 F1000", vase_start)
+        self.assertIn("G28 ;Home all", retract_start)
+        self.assertIn("G1 Z10 F1000", retract_start)
+        self.assertLess(retract_start.index("G28 ;Home all"), retract_start.index("G1 Z10 F1000"))
+        self.assertIn("CLAY_TRAVEL_OPEN", vase["printer_notes"])
+        self.assertIn("CLAY_TRAVEL_RETRACT", infill["compatible_printers_condition"])
 
     def test_clay_filament_is_cold(self) -> None:
         f = self.ini["filament:Clay Potterbot"]

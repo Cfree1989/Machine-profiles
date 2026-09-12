@@ -9,7 +9,7 @@ VENDOR = ROOT / "vendor" / "Potterbot.ini"
 BUNDLE = ROOT / "profiles" / "Potterbot-9-bundle.ini"
 IDX = ROOT / "vendor" / "Potterbot.idx"
 
-CONFIG_VERSION = "0.1.14"
+CONFIG_VERSION = "0.1.16"
 NOZZLES = list(range(1, 11))
 BED_X = 381  # 15 in bat; firmware X travel is 420
 BED_Y = 360  # firmware Y travel (bat is 381)
@@ -28,6 +28,7 @@ END_RETRACT = 500
 RETRACT_LENGTH = 80
 RETRACT_SPEED = 80
 RETRACT_LIFT = 5
+# Hop only after layer 0 so the skirt unretracts at layer height, not layer+5.
 # Cura jobs emit no M204, so Duet uses config.g M201 XY/E 3000. Match that.
 ACCEL_XY = 3000
 
@@ -51,17 +52,28 @@ def fmt_num(value: float) -> str:
     return f"{value:g}"
 
 
-def start_gcode() -> str:
+def start_gcode(*, retract: bool) -> str:
+    if retract:
+        header = (
+            "; EXPERIMENTAL PrusaSlicer Potterbot 9 Retract - not production-ready\n"
+            "; Home, then drop from Z400 so the first retract/hop is not at the column top"
+        )
+        extra = "\nG1 Z10 F1000 ;drop from Z400 before slicer retract"
+    else:
+        header = (
+            "; EXPERIMENTAL PrusaSlicer Potterbot 9 - not production-ready\n"
+            "; Start matches official Cura 3D Potter Standard (G28 only; first travel includes Z)"
+        )
+        extra = ""
     return nln(
-        "; EXPERIMENTAL PrusaSlicer Potterbot 9 - not production-ready\n"
-        "; Home, then drop from Z400 so the first retract/hop is not at the column top\n"
+        f"{header}\n"
         "T0\n"
         "G21\n"
         "G90\n"
         "M83\n"
         "M107\n"
-        "G28 ;Home all\n"
-        "G1 Z10 F1000 ;drop from Z400 before slicer retract"
+        "G28 ;Home all"
+        f"{extra}"
     )
 
 
@@ -82,7 +94,12 @@ def layer_for_nozzle(nozzle: int) -> float:
     return min(LAYER_HEIGHT, 0.8 * float(nozzle))
 
 
-def printer_notes(nozzle: int) -> str:
+def retract_lift_above_for(nozzle: int) -> float:
+    # Just above first-layer height (1.6 on 1.5 mm Fine, 0.9 on the 1 mm tip).
+    return layer_for_nozzle(nozzle) + 0.1
+
+
+def printer_notes(nozzle: int, *, retract: bool) -> str:
     layer = layer_for_nozzle(nozzle)
     if layer < LAYER_HEIGHT:
         layer_note = (
@@ -91,13 +108,22 @@ def printer_notes(nozzle: int) -> str:
         )
     else:
         layer_note = "Layer height is the official 1.5 mm Fine value. "
+    travel = "CLAY_TRAVEL_RETRACT" if retract else "CLAY_TRAVEL_OPEN"
+    retract_note = (
+        "Mid-print retract is 80 mm at 80 mm/s with 5 mm Z-hop after layer 0 "
+        f"(retract_lift_above {fmt_num(retract_lift_above_for(nozzle))} mm; not the FAQ 1000 mm/s). "
+        "Start G-code drops to Z10 after G28. Use with the Infill print profile. "
+        if retract
+        else "Mid-print retract is off (official Cura). After G28 the first travel must include Z down to the layer. "
+    )
     return (
         "Don't remove the following keywords! These keywords are used in the compatible printer condition of the print and filament profiles.\\n"
         "PRINTER_VENDOR_POTTERBOT\\n"
         "PRINTER_MODEL_9\\n"
+        f"{travel}\\n"
         "EXPERIMENTAL\\n"
         f"Not production-ready. 3D Potterbot 9, Duet 2 WiFi, RRF 2.04RC1, {nozzle} mm nozzle. "
-        f"Clay is cold (no heaters). {layer_note}"
+        f"Clay is cold (no heaters). {layer_note}{retract_note}"
         "Match line width to the nozzle on the machine. "
         "Bed is the 15x15 in bat (381 mm) clipped to Y 360. After G28 the head is at X420 Y0 Z400."
     )
@@ -114,6 +140,13 @@ def vendor_block() -> str:
         "",
         "[printer_model:POTTERBOT9]",
         "name = 3D Potterbot 9 (experimental)",
+        "variants = " + ";".join(str(n) for n in NOZZLES),
+        "technology = FFF",
+        "family = Potterbot",
+        "default_materials = Clay Potterbot",
+        "",
+        "[printer_model:POTTERBOT9R]",
+        "name = 3D Potterbot 9 Retract (experimental)",
         "variants = " + ";".join(str(n) for n in NOZZLES),
         "technology = FFF",
         "family = Potterbot",
@@ -158,9 +191,9 @@ def vendor_block() -> str:
         "retract_before_travel = 15",
         "retract_before_wipe = 0%",
         "retract_layer_change = 0",
-        f"retract_length = {RETRACT_LENGTH}",
+        "retract_length = 0",
         "retract_length_toolchange = 0",
-        f"retract_lift = {RETRACT_LIFT}",
+        "retract_lift = 0",
         "retract_lift_above = 0",
         "retract_lift_below = 0",
         "retract_restart_extra = 0",
@@ -177,7 +210,7 @@ def vendor_block() -> str:
         "variable_layer_height = 0",
         "wipe = 0",
         "z_offset = 0",
-        f"start_gcode = {start_gcode()}",
+        f"start_gcode = {start_gcode(retract=False)}",
         f"end_gcode = {end_gcode()}",
         "",
     ]
@@ -185,6 +218,7 @@ def vendor_block() -> str:
     bed = f"0x0,{BED_X}x0,{BED_X}x{BED_Y},0x{BED_Y}"
     for nozzle in NOZZLES:
         name = f"{nozzle}mm Nozzle"
+        max_layer = fmt_num(max(layer_for_nozzle(nozzle), float(nozzle)))
         lines.extend(
             [
                 f"[printer:{name}]",
@@ -194,10 +228,28 @@ def vendor_block() -> str:
                 f"bed_shape = {bed}",
                 f"max_print_height = {BED_Z}",
                 f"nozzle_diameter = {nozzle}",
-                f"max_layer_height = {fmt_num(max(layer_for_nozzle(nozzle), float(nozzle)))}",
+                f"max_layer_height = {max_layer}",
                 "min_layer_height = 0.2",
                 f"default_print_profile = Vase Hollow @Potterbot {nozzle}mm",
-                f"printer_notes = {printer_notes(nozzle)}",
+                f"printer_notes = {printer_notes(nozzle, retract=False)}",
+                "",
+                f"[printer:{name} Retract]",
+                "inherits = *common*",
+                "printer_model = POTTERBOT9R",
+                f"printer_variant = {nozzle}",
+                f"bed_shape = {bed}",
+                f"max_print_height = {BED_Z}",
+                f"nozzle_diameter = {nozzle}",
+                f"max_layer_height = {max_layer}",
+                "min_layer_height = 0.2",
+                f"default_print_profile = Infill @Potterbot {nozzle}mm",
+                f"retract_length = {RETRACT_LENGTH}",
+                f"retract_lift = {RETRACT_LIFT}",
+                f"retract_lift_above = {fmt_num(retract_lift_above_for(nozzle))}",
+                f"retract_speed = {RETRACT_SPEED}",
+                f"deretract_speed = {RETRACT_SPEED}",
+                f"start_gcode = {start_gcode(retract=True)}",
+                f"printer_notes = {printer_notes(nozzle, retract=True)}",
                 "",
             ]
         )
@@ -252,7 +304,7 @@ def vendor_block() -> str:
             "max_print_speed = 85",
             "max_volumetric_speed = 0",
             "min_skirt_length = 0",
-            "notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms are Archimedean chords; tops are rectilinear; sparse infill is grid. 15% infill overlap so bottoms meet the wall. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). Mid-print retract is 80 mm at 80 mm/s with 5 mm Z-hop (not the FAQ 1000 mm/s). Start G-code drops to Z10 after G28 so the first retract is not at Z400. End G-code lifts Z 10 mm and pulls E-500.",
+            "notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms are Archimedean chords; tops are rectilinear; sparse infill is grid. 15% infill overlap so bottoms meet the wall. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). Vase profiles use the unretracted printer (official Cura). Infill uses the Retract printer (80 mm at 80 mm/s, 5 mm hop after layer 0; start drops to Z10). End G-code lifts Z 10 mm and pulls E-500.",
             f"layer_height = {fmt_num(LAYER_HEIGHT)}",
             f"first_layer_height = {fmt_num(LAYER_HEIGHT)}",
             "only_retract_when_crossing_perimeters = 1",
@@ -300,13 +352,7 @@ def vendor_block() -> str:
 
     for nozzle in NOZZLES:
         w = fmt_num(float(nozzle))
-        cond = (
-            "printer_notes=~/.*PRINTER_VENDOR_POTTERBOT.*/ and "
-            "printer_notes=~/.*PRINTER_MODEL_9.*/ and "
-            f"nozzle_diameter[0]=={nozzle}"
-        )
-        shared = [
-            f"compatible_printers_condition = {cond}",
+        widths = [
             f"extrusion_width = {w}",
             f"external_perimeter_extrusion_width = {w}",
             f"first_layer_extrusion_width = {w}",
@@ -318,12 +364,26 @@ def vendor_block() -> str:
         ]
         layer = layer_for_nozzle(nozzle)
         if layer < LAYER_HEIGHT:
-            shared.extend(
+            widths.extend(
                 [
                     f"layer_height = {fmt_num(layer)}",
                     f"first_layer_height = {fmt_num(layer)}",
                 ]
             )
+        vase_cond = (
+            "printer_notes=~/.*PRINTER_VENDOR_POTTERBOT.*/ and "
+            "printer_notes=~/.*PRINTER_MODEL_9.*/ and "
+            "printer_notes=~/.*CLAY_TRAVEL_OPEN.*/ and "
+            f"nozzle_diameter[0]=={nozzle}"
+        )
+        retract_cond = (
+            "printer_notes=~/.*PRINTER_VENDOR_POTTERBOT.*/ and "
+            "printer_notes=~/.*PRINTER_MODEL_9.*/ and "
+            "printer_notes=~/.*CLAY_TRAVEL_RETRACT.*/ and "
+            f"nozzle_diameter[0]=={nozzle}"
+        )
+        vase = [f"compatible_printers_condition = {vase_cond}", *widths]
+        retract = [f"compatible_printers_condition = {retract_cond}", *widths]
         hollow = f"Vase Hollow @Potterbot {nozzle}mm"
         bottom = f"Vase Bottom @Potterbot {nozzle}mm"
         infill = f"Infill @Potterbot {nozzle}mm"
@@ -333,13 +393,13 @@ def vendor_block() -> str:
                 "inherits = *common*",
                 "alias = Vase Hollow",
                 "bottom_solid_layers = 0",
-                *shared,
+                *vase,
                 "",
                 f"[print:{bottom}]",
                 "inherits = *common*",
                 "alias = Vase Bottom",
                 "bottom_solid_layers = 3",
-                *shared,
+                *vase,
                 "",
                 f"[print:{infill}]",
                 "inherits = *common*",
@@ -351,8 +411,8 @@ def vendor_block() -> str:
                 "top_solid_layers = 3",
                 "avoid_crossing_perimeters = 1",
                 "infill_overlap = 15%",
-                "notes = EXPERIMENTAL. Infill / multi-object clay. 15% grid infill, 3 Archimedean-chord bottoms, 3 rectilinear tops. Mid-print retract is 80 mm at 80 mm/s with 5 mm Z-hop (same printer settings as the vase profiles). Raise infill % on the plater if you need it. Sequential printing (complete objects) is off so a tall pot cannot hit the nozzle; turn it on only if objects are short and spaced.",
-                *shared,
+                "notes = EXPERIMENTAL. Infill / multi-object clay. 15% grid infill, 3 Archimedean-chord bottoms, 3 rectilinear tops. Requires the Retract printer (80 mm at 80 mm/s, 5 mm Z-hop after layer 0; start drops to Z10). Raise infill % on the plater if you need it. Sequential printing (complete objects) is off so a tall pot cannot hit the nozzle; turn it on only if objects are short and spaced.",
+                *retract,
                 "",
             ]
         )
@@ -383,7 +443,7 @@ def vendor_block() -> str:
             "fan_below_layer_time = 0",
             "filament_colour = #55AAFF",
             "filament_max_volumetric_speed = 0",
-            'filament_notes = "EXPERIMENTAL. Official 3D Potter Clay material: 1.75 mm volumetric model, 0 C, no fan. Mid-print retract is 80 mm at 80 mm/s with 5 mm Z-hop on the printer preset. End G-code retracts E-500. Prime clay from Duet macros if the ram is not already charged."',
+            'filament_notes = "EXPERIMENTAL. Official 3D Potter Clay material: 1.75 mm volumetric model, 0 C, no fan. Vase printers leave mid-print retract off. The Retract printer is 80 mm at 80 mm/s with 5 mm Z-hop after layer 0. End G-code retracts E-500. Prime clay from Duet macros if the ram is not already charged."',
             "filament_type = FLEX",
             "first_layer_bed_temperature = 0",
             "first_layer_temperature = 0",
@@ -425,9 +485,14 @@ def idx_text() -> str:
         "0.1.12 Mid-print retract and Z-hop off (official Cura). After G28 the head is at Z400; "
         "a slicer E-80 hop was retracting at the top of the column before the first layer.\n"
         "0.1.13 Print/travel acceleration 3000 mm/s² to match firmware M201 / Cura jobs (no slower M204 P500).\n"
-        f"{CONFIG_VERSION} Mid-print retract 80 mm at 80 mm/s with 5 mm Z-hop. "
+        "0.1.14 Mid-print retract 80 mm at 80 mm/s with 5 mm Z-hop. "
         "Start G-code drops to Z10 after G28 so the first retract is not at Z400. "
         "Not the FAQ 1000 mm/s recipe.\n"
+        "0.1.15 Vase printers unretracted (official Cura, G28 only). "
+        "New 3D Potterbot 9 Retract printers (1-10 mm) use 80 mm at 80 mm/s and 5 mm hop; "
+        "start drops to Z10. Infill profiles require the Retract printer.\n"
+        f"{CONFIG_VERSION} Retract printers hop only after layer 0 "
+        "(retract_lift_above = first layer + 0.1 mm) so the skirt unretracts at layer height.\n"
     )
 
 
