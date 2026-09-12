@@ -78,9 +78,9 @@ Start/end G-code and Hyper Speed headers come from ideaMaker **5.4.2.8790** (`RA
 - `reference/ideamaker/RightonlyExtruder.gcode` — right `T1` only (same `X20 Y0` wipe; home on T1)
 - `reference/ideamaker/MulticolorRaise3d.gcode` — dual / two-color (`T0`+`T1` in-place prime, standby 180 °C). ideaMaker wipe-tower XY is reference only; PrusaSlicer owns the tower.
 
-The 2022 forum zips in `reference/community/` are **community starting points** (Marlin, pre-Hyper Speed). They were not used for start/end G-code. Thread: [Prusa Slicer Profile for Raise3D Pro2 dual head printer](https://forum.prusa3d.com/forum/prusaslicer/prusa-slicer-profile-for-raise3d-pro2-dual-head-printer/).
+The 2022 forum configs in `reference/community/extracted/` are **community starting points** (Marlin, pre-Hyper Speed). They were not used for start/end G-code. Thread: [Prusa Slicer Profile for Raise3D Pro2 dual head printer](https://forum.prusa3d.com/forum/prusaslicer/prusa-slicer-profile-for-raise3d-pro2-dual-head-printer/).
 
-Comparison slices (this profile’s exports, a later ideaMaker job, and Prusa XL IS) live under `reference/prusaslicer/`, `reference/ideamaker/IdeaMakerTest.gcode`, and `reference/prusa-xl/` — see `reference/README.md`.
+This profile’s Dual export for header diffs is `reference/prusaslicer/Raise3DTest_0.4n_0.2mm_PLA_PRO2PLUS_HS_DUAL_3h2m.gcode` — see `reference/README.md`.
 
 Command-by-command mapping: `docs/GCODE_MAPPING.md`  
 Evidence labels: `docs/MACHINE_BEHAVIOR.md`
@@ -96,6 +96,20 @@ Evidence labels: `docs/MACHINE_BEHAVIOR.md`
 - Dual: electronic lift on `T0`/`T1`, firmware XY offset (~25 mm X; slicer offset 0), in-place dual prime (`F200 E10` / `E-11`) when both tools are used. After purge, first print travel is XY at Z15 then Z (ideaMaker; PrusaSlicer would drop Z at the purge). Tool-change standby 180 °C. Right-only uses the same `X80 Y0` wipe as left, after homing on T1. Wipe tower default X50 Y140 (relative E); this ideaMaker dual file placed the octagon around ~X50 Y241. Next-tool `M104` is inserted ~400 lines before swap `M109` (ideaMaker gaps 64–2200, median 762). T1 in this dual file stays ≥ ~X27; validator keep-out is X < 25.
 - Relative E (`M83`) instead of ideaMaker `M82`, required for PrusaSlicer's wipe tower. Left-only purge uses `E1` on the `X80 Y0` move (the extra 1 mm after the 29 mm blob).
 - Sequential printing: `extruder_clearance_height` 80 mm (Copperhead). `extruder_clearance_radius` 90 mm so the whole head is inside the cylinder (T0 front-right ~86). Operator box: T0 L42.5/R70/F50/B30, T1 L67.5/R45/F50/B30. ideaMaker stock was gantry 65 and T0 37/63/45/70, T1 62/38/45/70. Complete individual objects is still off by default.
+
+## Validation (do not skip)
+
+| Stage | Action |
+| --- | --- |
+| 1 | Import bundle; confirm Dual printer / filament / print appear and are linked. |
+| 2 | Slice a small left-only PLA test; run `scripts/validate_gcode.py` on the output; diff headers vs ideaMaker. |
+| 3 | Supervised first-layer: homing, heat, purge, Z height, fan, shutdown. |
+| 4 | Small calibration object vs ideaMaker baseline. |
+| 5 | Pause / runout — only after 3–4 pass. |
+| 6 | Right-only (object assigned to extruder 2): heat T1 only, home on T1, same `X80 Y0` wipe as left (not dual `E10`). Lift, first layer, keep-out. |
+| 7 | Dual color: 180 °C standby, lift, alignment (firmware offset), wipe tower (default X50 Y140). Abort if nozzles collide, T1 is shifted ~25 mm, or purge lands on the part. |
+
+Out of scope for this pass: pause/runout as a tested feature, a Hyper Speed PLA filament preset, claiming the touchscreen Hyper Speed checkmark works, expanding the bed past 305 × 305 × 605, slicing the 25 mm X offset, per-tool printable area, ideaMaker’s 15 mm/s dual skirt, and the 50→150 layer speed ramp.
 
 ## Before you print
 

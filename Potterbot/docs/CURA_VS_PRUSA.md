@@ -2,7 +2,7 @@
 
 Read-only comparison of the experimental PrusaSlicer bundle (**config 0.1.13**) against the official Cura **3D Potter Standard** machine and the Cura 5.12 jobs that actually run on this Duet.
 
-The machine already ran a post-0.1.12 Prusa slice successfully (retract off). **0.1.13** sets print/travel acceleration to **3000 mm/s²** so `M204` matches firmware `M201` / Cura (which never slowed accel). Repo files `Shape-Cylinder_*.gcode` are **old 0.1.11 slices** (they still contain `G1 E-80`). Treat those as historical; do not print them.
+The machine already ran a post-0.1.12 Prusa slice successfully (retract off). **0.1.13** sets print/travel acceleration to **3000 mm/s²** so `M204` matches firmware `M201` / Cura (which never slowed accel).
 
 ## Sources
 
@@ -11,12 +11,12 @@ The machine already ran a post-0.1.12 Prusa slice successfully (retract off). **
 | `reference/cura/3D Potter Standard.3mf` | Official 3D Potter Cura machine (FAQ: Models 9 / Pro 9 / Super 9) |
 | `reference/cura/no_bottom__layers.gcode` | Cura 5.12 hollow vase, 5 mm walls, 0 bottoms |
 | `reference/cura/Bottom_Layers.gcode` | Same model, 3 bottoms then spiral |
-| `CFFFP_Test.gcode` | Lab Cura 5.12 job that printed well (7 mm walls) |
+| `reference/cura/CFFFP_Test.gcode` | Lab Cura 5.12 job that printed well (7 mm walls) |
 | `vendor/Potterbot.ini` | Generated PrusaSlicer bundle 0.1.13 |
 | `reference/firmware/config.g` | Live Duet: 420 × 360 × 400, `M83`, cold extrusion |
 | [3D Potter FAQ](https://3dpotter.com/faq/) | Cura is recommended; retract recipe is optional and **disabled** in the official 3mf |
 | [Duet G-code dictionary](https://docs.duet3d.com/User_manual/Reference/Gcodes) | On this firmware, **G0 = G1 in FFF mode**; `F` is mm/min |
-| Lab `reference/manual/Instructions.txt` | Match **line width** to the installed nozzle |
+| Lab rule | Match **line width** to the installed nozzle |
 
 Marketing pages often list Potterbot 9 as 420 × 360 × **480** mm. This board’s `config.g` and the official 3mf are **Z 400**. Super 9 is a taller sibling. Use the Duet config, not the brochure.
 
@@ -222,7 +222,6 @@ Bottom fill pattern is a real path difference on Vase Bottom / Infill. Hollow sp
 5. **Archimedean bottoms vs Cura concentric** — only when bottoms exist.
 6. **1 mm tip 0.8 mm layer** — PrusaSlicer limit.
 7. **Infill preset** — extra; official Cura vase is 0% infill.
-8. **Stale `Shape-Cylinder_*.gcode` in the repo** — still 0.1.11 retract; delete or re-slice if they confuse operators.
 
 ---
 

@@ -6,7 +6,7 @@ Sources of truth (ideaMaker 5.4.2.8790):
 - `RightonlyExtruder.gcode` — right `T1` only (2026-08-25)
 - `MulticolorRaise3d.gcode` — dual / two-color `T0`+`T1` (2026-08-25)
 
-Matching `.data` files are binary metadata only and were not modified.
+Matching `.data` files are binary metadata only and were not modified. ideaMaker Advanced Settings tabs for **Standard - Pro2 Plus HS - PLA** are in `reference/ideamaker/Settings/`.
 
 Every item is labeled:
 
@@ -117,9 +117,9 @@ Dual file: `M221` T0 and T1 `S100` twice around `M1002`, `M104 T0 S0` and `M104 
 
 ## Community zip files (not authoritative)
 
-Stored under `reference/community/`. See `reference/SOURCE_CLASSIFICATION.md`.
+Extracted INIs live under `reference/community/extracted/`. See `reference/README.md`.
 
-These are 2022 **Marlin** PrusaSlicer profiles for pre-Hyper Speed Pro2/Pro2 Plus machines. They are starting points for bed comments and `M1001`/`M1002` only. Start/end G-code for this project is taken from the ideaMaker file, not from those zips.
+These are 2022 **Marlin** PrusaSlicer profiles for pre-Hyper Speed Pro2/Pro2 Plus machines. They are starting points for bed comments and `M1001`/`M1002` only. Start/end G-code for this project is taken from the ideaMaker file, not from those community configs.
 
 ## Uncertainties (do not silently resolve)
 

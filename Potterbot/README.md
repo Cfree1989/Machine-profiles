@@ -4,7 +4,7 @@ This folder is the Potterbot pack in [PrusaSlicer print profiles](../README.md).
 
 **This is not a production-ready profile.** It is a PrusaSlicer bundle derived from the official Cura **3D Potter Standard** project and two Cura 5.12 jobs on this machine (`no_bottom__layers.gcode`, `Bottom_Layers.gcode`). Validate on the machine before any unattended print. Keep Cura as the rollback slicer.
 
-Printer workflow: slice on the PC → upload `.gcode` in Duet Web Control (`192.168.42.14` on the printer Wi-Fi) → start from DWC. Prime clay from the Duet **Prime** macro if the ram is not already charged.
+Printer workflow: join the **3DP-9** Wi-Fi → open Duet Web Control (`192.168.42.14` or the 3DP-D9 shortcut) → **Connect** → slice on the PC → upload `.gcode` in DWC → start from DWC. Prime clay from the Duet **Prime** macro if the ram is not already charged. Line width must match the nozzle on the machine. If you built a clay base by hand, use **Vase Hollow** (0 bottoms / 0 tops). Official Cura Fuzzy Skin stays off.
 
 ## What is in this pass
 

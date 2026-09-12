@@ -8,7 +8,7 @@ Evidence for the PrusaSlicer bundle. Labels are from files in `reference/`.
 - `config.g` names the machine **3DP-D9**. Absolute XYZ, **relative E** (`M83`), cold extrusion (`M302 P1`), bed heater off (`M140 H-1`).
 - Drive limits: X 0–420, Y 0–360, Z 0–400. Home: X max, Y min, Z max. After `G28` the head is at **X420 Y0 Z400**.
 - Max feed (mm/s): XY 100, Z 16.67, E 366.67. Accel XY/E 3000, Z 1000. `config.g` comment: keep slicer speeds ≤ 85 mm/s. The Prusa bundle uses print/travel acceleration **3000** so emitted `M204` matches Cura jobs that rely on these `M201` values.
-- `config.g.bak` is the same file with Z max 200 (older short-column setup).
+- An older board dump used the same `config.g` with Z max 200 (short-column setup). Live config is Z 400.
 
 ## Official slicer settings
 
@@ -30,7 +30,7 @@ From `reference/cura/3D Potter Standard.3mf` (Cura machine) and the Cura 5.12 jo
 
 `no_bottom__layers.gcode` has `bottom_layers = 0`. `Bottom_Layers.gcode` has `bottom_layers = 3`. Both spiralize after the base.
 
-Lab `Instructions.txt` says to match **line width** to the nozzle on the machine. It does not scale layer height with the tip. 3D Potter does not publish a layer-height-to-nozzle percentage. This bundle keeps **1.5 mm layer** on 2–10 mm nozzles and sets line width equal to the selected nozzle. The 1 mm tip is **0.8 mm layer** because PrusaSlicer rejects `extrusion_width <= layer_height` and also rejects first-layer height greater than nozzle diameter. Print profile names omit the layer height. Sparse infill is **grid**, solid bottoms are **Archimedean chords**, and solid tops are **rectilinear**. Infill overlap is **15%** so bottoms meet the wall.
+Lab notes say to match **line width** to the nozzle on the machine. It does not scale layer height with the tip. 3D Potter does not publish a layer-height-to-nozzle percentage. This bundle keeps **1.5 mm layer** on 2–10 mm nozzles and sets line width equal to the selected nozzle. The 1 mm tip is **0.8 mm layer** because PrusaSlicer rejects `extrusion_width <= layer_height` and also rejects first-layer height greater than nozzle diameter. Print profile names omit the layer height. Sparse infill is **grid**, solid bottoms are **Archimedean chords**, and solid tops are **rectilinear**. Infill overlap is **15%** so bottoms meet the wall.
 
 PrusaSlicer Preview draws each move as a rounder tube than the real 1.5 mm × nozzle ribbon. On a 9 mm tip the G-code pitch is the flow spacing (~8.7 mm) with **WIDTH:9** and a 0.3 mm overlap; the dark grid between rings is the viewer, not missing clay. Confirm from the `;WIDTH:` lines and centerline spacing, or a short skirt on the machine. Do not keep widening line width to make Preview look solid — that would over-extrude.
 
