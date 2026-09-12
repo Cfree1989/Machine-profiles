@@ -13,3 +13,4 @@ min_slic3r_version = 2.9.0
 0.1.11 Bottoms are Archimedean chords again. The Preview grid on wide tips is the viewer, not that fill pattern.
 0.1.12 Mid-print retract and Z-hop off (official Cura). After G28 the head is at Z400; a slicer E-80 hop was retracting at the top of the column before the first layer.
 0.1.13 Print/travel acceleration 3000 mm/s² to match firmware M201 / Cura jobs (no slower M204 P500).
+0.1.14 Mid-print retract 80 mm at 80 mm/s with 5 mm Z-hop. Start G-code drops to Z10 after G28 so the first retract is not at Z400. Not the FAQ 1000 mm/s recipe.

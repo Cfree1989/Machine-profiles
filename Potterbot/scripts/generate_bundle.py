@@ -9,7 +9,7 @@ VENDOR = ROOT / "vendor" / "Potterbot.ini"
 BUNDLE = ROOT / "profiles" / "Potterbot-9-bundle.ini"
 IDX = ROOT / "vendor" / "Potterbot.idx"
 
-CONFIG_VERSION = "0.1.13"
+CONFIG_VERSION = "0.1.14"
 NOZZLES = list(range(1, 11))
 BED_X = 381  # 15 in bat; firmware X travel is 420
 BED_Y = 360  # firmware Y travel (bat is 381)
@@ -21,12 +21,13 @@ BOTTOM_SPEED = 20
 SKIRT_COUNT = 3
 SKIRT_GAP = 8
 END_RETRACT = 500
-# Mid-print retract stays off, matching official Cura 3D Potter Standard.
-# After G28 the head is at Z400. A slicer retract+Z-hop there pulls the ram
-# for seconds at the top of the column, then hops as if Z were already 1.5 mm.
-# Do not use the 3D Potter FAQ 1000 mm @ 1000 mm/s recipe (exceeds M203 E).
-# Keep a slow ram speed on the printer so a manual enable in the UI is not 1000.
-RETRACT_SPEED = 17
+# Mid-print ram reverse for travels (islands / infill). Not the FAQ 1000 mm @
+# 1000 mm/s recipe — that exceeds config.g M203 E22000 (~367 mm/s) and stalled.
+# After G28 the head is at Z400; start G-code drops to Z10 so the first slicer
+# retract+hop is near the bat, not at the top of the column.
+RETRACT_LENGTH = 80
+RETRACT_SPEED = 80
+RETRACT_LIFT = 5
 # Cura jobs emit no M204, so Duet uses config.g M201 XY/E 3000. Match that.
 ACCEL_XY = 3000
 
@@ -53,13 +54,14 @@ def fmt_num(value: float) -> str:
 def start_gcode() -> str:
     return nln(
         "; EXPERIMENTAL PrusaSlicer Potterbot 9 - not production-ready\n"
-        "; Start matches official Cura 3D Potter Standard (G28 only; first travel includes Z)\n"
+        "; Home, then drop from Z400 so the first retract/hop is not at the column top\n"
         "T0\n"
         "G21\n"
         "G90\n"
         "M83\n"
         "M107\n"
-        "G28 ;Home all"
+        "G28 ;Home all\n"
+        "G1 Z10 F1000 ;drop from Z400 before slicer retract"
     )
 
 
@@ -156,9 +158,9 @@ def vendor_block() -> str:
         "retract_before_travel = 15",
         "retract_before_wipe = 0%",
         "retract_layer_change = 0",
-        "retract_length = 0",
+        f"retract_length = {RETRACT_LENGTH}",
         "retract_length_toolchange = 0",
-        "retract_lift = 0",
+        f"retract_lift = {RETRACT_LIFT}",
         "retract_lift_above = 0",
         "retract_lift_below = 0",
         "retract_restart_extra = 0",
@@ -250,7 +252,7 @@ def vendor_block() -> str:
             "max_print_speed = 85",
             "max_volumetric_speed = 0",
             "min_skirt_length = 0",
-            "notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms are Archimedean chords; tops are rectilinear; sparse infill is grid. 15% infill overlap so bottoms meet the wall. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). Mid-print retract and Z-hop are off (official Cura). After G28 the head is at Z400; the first travel must include Z down to the layer. End G-code lifts Z 10 mm and pulls E-500.",
+            "notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms are Archimedean chords; tops are rectilinear; sparse infill is grid. 15% infill overlap so bottoms meet the wall. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). Mid-print retract is 80 mm at 80 mm/s with 5 mm Z-hop (not the FAQ 1000 mm/s). Start G-code drops to Z10 after G28 so the first retract is not at Z400. End G-code lifts Z 10 mm and pulls E-500.",
             f"layer_height = {fmt_num(LAYER_HEIGHT)}",
             f"first_layer_height = {fmt_num(LAYER_HEIGHT)}",
             "only_retract_when_crossing_perimeters = 1",
@@ -349,7 +351,7 @@ def vendor_block() -> str:
                 "top_solid_layers = 3",
                 "avoid_crossing_perimeters = 1",
                 "infill_overlap = 15%",
-                "notes = EXPERIMENTAL. Infill / multi-object clay. 15% grid infill, 3 Archimedean-chord bottoms, 3 rectilinear tops. Mid-print retract off like the vase profiles (official Cura). Raise infill % on the plater if you need it. Sequential printing (complete objects) is off so a tall pot cannot hit the nozzle; turn it on only if objects are short and spaced.",
+                "notes = EXPERIMENTAL. Infill / multi-object clay. 15% grid infill, 3 Archimedean-chord bottoms, 3 rectilinear tops. Mid-print retract is 80 mm at 80 mm/s with 5 mm Z-hop (same printer settings as the vase profiles). Raise infill % on the plater if you need it. Sequential printing (complete objects) is off so a tall pot cannot hit the nozzle; turn it on only if objects are short and spaced.",
                 *shared,
                 "",
             ]
@@ -381,7 +383,7 @@ def vendor_block() -> str:
             "fan_below_layer_time = 0",
             "filament_colour = #55AAFF",
             "filament_max_volumetric_speed = 0",
-            'filament_notes = "EXPERIMENTAL. Official 3D Potter Clay material: 1.75 mm volumetric model, 0 C, no fan. Mid-print retract is off (official Cura). End G-code retracts E-500. Prime clay from Duet macros if the ram is not already charged."',
+            'filament_notes = "EXPERIMENTAL. Official 3D Potter Clay material: 1.75 mm volumetric model, 0 C, no fan. Mid-print retract is 80 mm at 80 mm/s with 5 mm Z-hop on the printer preset. End G-code retracts E-500. Prime clay from Duet macros if the ram is not already charged."',
             "filament_type = FLEX",
             "first_layer_bed_temperature = 0",
             "first_layer_temperature = 0",
@@ -422,7 +424,10 @@ def idx_text() -> str:
         "0.1.11 Bottoms are Archimedean chords again. The Preview grid on wide tips is the viewer, not that fill pattern.\n"
         "0.1.12 Mid-print retract and Z-hop off (official Cura). After G28 the head is at Z400; "
         "a slicer E-80 hop was retracting at the top of the column before the first layer.\n"
-        f"{CONFIG_VERSION} Print/travel acceleration 3000 mm/s² to match firmware M201 / Cura jobs (no slower M204 P500).\n"
+        "0.1.13 Print/travel acceleration 3000 mm/s² to match firmware M201 / Cura jobs (no slower M204 P500).\n"
+        f"{CONFIG_VERSION} Mid-print retract 80 mm at 80 mm/s with 5 mm Z-hop. "
+        "Start G-code drops to Z10 after G28 so the first retract is not at Z400. "
+        "Not the FAQ 1000 mm/s recipe.\n"
     )
 
 

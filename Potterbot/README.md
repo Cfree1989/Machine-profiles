@@ -14,7 +14,7 @@ Printer workflow: join the **3DP-9** Wi-Fi → open Duet Web Control (`192.168.4
 | Filament | **Clay Potterbot** (0 °C, no fan, 1.75 mm volumetric model) |
 | Print | **Vase Hollow**, **Vase Bottom** (3 Archimedean-chord bottoms then spiral), and **Infill** (15% grid, 3 Archimedean-chord bottoms, 3 rectilinear tops, spiral off) |
 
-Layer height is the official Fine value: **1.5 mm**, except **0.8 mm** on the 1 mm nozzle (PrusaSlicer will not slice when line width is not greater than layer height, and it also rejects a first layer taller than the tip). Line width equals the nozzle on the machine (lab Cura notes). Bottoms are **Archimedean chords**. Speeds are the official Cura values: **40 mm/s** print, **80** travel, **20** bottoms. Print and travel acceleration is **3000 mm/s²** (firmware `M201` / Cura). Mid-print retract and Z-hop are **off**, matching official Cura: after `G28` the head is at **Z400**, and the first travel must include Z down to the layer. An earlier E-80 hop ran the ram for several seconds at the top of the column. End G-code still lifts Z 10 mm and **retracts E-500**, then homes.
+Layer height is the official Fine value: **1.5 mm**, except **0.8 mm** on the 1 mm nozzle (PrusaSlicer will not slice when line width is not greater than layer height, and it also rejects a first layer taller than the tip). Line width equals the nozzle on the machine (lab Cura notes). Bottoms are **Archimedean chords**. Speeds are the official Cura values: **40 mm/s** print, **80** travel, **20** bottoms. Print and travel acceleration is **3000 mm/s²** (firmware `M201` / Cura). Mid-print retract is **80 mm at 80 mm/s** with a **5 mm** Z-hop (not the FAQ 1000 mm/s). After `G28` the head is at **Z400**; start G-code drops to **Z10** so that first retract is not at the top of the column. End G-code still lifts Z 10 mm and **retracts E-500**, then homes.
 
 The plater is the **15×15″ bat** clipped to Y travel: **381 × 360 × 400 mm**. Firmware travel is 420 × 360 × 400; X past 381 is unused so the model stays on the bat.
 
@@ -59,7 +59,7 @@ C:\Repos\Prusa-Slicer-Print-Profiles\Potterbot\scripts\validate_gcode.py
 
 - 1.75 mm filament diameter matches how this ram’s E steps were calibrated (official Cura and Simplify3D both used it).
 - E-500 at the end is enough to stop ooze on your current clay body. The Duet **Retract** button is a much larger pull if you need it.
-- Mid-print retract is off. Official Cura jobs never retract until the end `E-500`. Do not turn on slicer retract/Z-hop without a supervised test: after `G28` the nozzle is at Z400, so a hop fires at the top of the column.
+- Mid-print retract is **80 mm at 80 mm/s** with a 5 mm hop. Official Cura jobs leave retract off until the end `E-500`. Supervised first print: confirm the first `E-` is after the Z10 drop, not at Z400, and that the first bead is at layer height (~1.5 mm), not hop height (6.5 mm).
 - Official docs only publish 1.5 mm layer height (Fine / 3D Potter Standard). That value is used on 2–10 mm nozzles. The 1 mm tip is **0.8 mm** so line width stays above layer height. Line width still follows the installed tip. Tune layer height per clay if 1.5 mm is wrong for a large nozzle.
 - Bat origin is X0 Y0 (firmware bed edge). If the bat is shifted on the table, jog and re-zero before trusting the plater.
 - `pause.g` on the board homes the machine. Slicer pause emits `M25` instead. Do not copy `pause.g` into the profile.
@@ -68,7 +68,7 @@ C:\Repos\Prusa-Slicer-Print-Profiles\Potterbot\scripts\validate_gcode.py
 
 1. Install the nozzle that matches the selected printer variant. Line width in the profile equals that nozzle.
 2. Slice a short vase, or use **Infill** for infill / several objects. Post-processing runs `validate_gcode.py` and **aborts export** if it sees heater commands, missing `E-500`, missing `M83`, or moves off the 381 × 360 bat.
-3. Read the first and last lines: start is `G28` only (no heat, no retract); the next move must include Z down from 400; end is `G0 Z10 E-500 F1000` then `G28`.
+3. Read the first and last lines: start is `G28` then `G1 Z10 F1000` (no heat); the first slicer retract must be after that drop, not at Z400; end is `G0 Z10 E-500 F1000` then `G28`.
 4. Charge clay with the Duet Prime macro. Supervised first bead: home, first loop, spiral, end retract.
 5. Do not leave a tall job unattended until that check passes.
 

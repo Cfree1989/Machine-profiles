@@ -36,11 +36,11 @@ PrusaSlicer Preview draws each move as a rounder tube than the real 1.5 mm × no
 
 ## Retraction
 
-Official Cura **3D Potter Standard** stores `retraction_amount = 1000` / `retraction_speed = 1000` but sets `retraction_enable = False`. Known-good jobs never retract mid-print. After `G28` the head is at **X420 Y0 Z400**. Cura’s first move is a single `G0 … Z1.5` from that pose.
+Official Cura **3D Potter Standard** stores `retraction_amount = 1000` / `retraction_speed = 1000` but sets `retraction_enable = False`. Known-good Cura jobs never retract mid-print. After `G28` the head is at **X420 Y0 Z400**. Cura’s first move is a single `G0 … Z1.5` from that pose.
 
 The [3D Potter FAQ](https://3dpotter.com/faq/) mid-print recipe (1000 mm at 1000 mm/s) exceeds `config.g` `M203 E22000` (367 mm/s) and is what stalled the ram motor in Cura.
 
-This bundle keeps mid-print retract and Z-hop **off** (`retract_length = 0`, `retract_lift = 0`). A printer `E-80` + 5 mm hop after `G28` retracted for several seconds at Z400, then treated `G1 Z6.5` as a hop from layer height instead of a drop from the column top. End G-code is still `G0 Z10 E-500 F1000`. `retract_speed` stays 17 mm/s so a manual enable in the UI is not the FAQ 1000 mm/s.
+This bundle turns mid-print retract **on**: `retract_length = 80`, `retract_speed = 80`, `deretract_speed = 80`, `retract_lift = 5`, extra restart **0**, wipe **off**. Not the FAQ 1000 mm/s. After `G28`, start G-code drops to **Z10** (`G1 Z10 F1000`) so the first slicer retract+hop is near the bat. 0.1.11’s `E-80` hop without that drop ran the ram at Z400, then treated `G1 Z6.5` as a hop from layer height. End G-code is still `G0 Z10 E-500 F1000`.
 
 ## Bed vs bat
 

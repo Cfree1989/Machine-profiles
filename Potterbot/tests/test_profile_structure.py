@@ -31,7 +31,7 @@ class VendorStructureTests(unittest.TestCase):
     def test_vendor_and_model(self) -> None:
         self.assertEqual(self.ini["vendor"]["name"], "3D Potter (experimental)")
         self.assertEqual(self.ini["vendor"]["repo_id"], "non-prusa-fff")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.13")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.14")
         self.assertEqual(self.ini["printer_model:POTTERBOT9"]["variants"], "1;2;3;4;5;6;7;8;9;10")
         self.assertEqual(self.ini["printer_model:POTTERBOT9"]["default_materials"], "Clay Potterbot")
 
@@ -41,14 +41,16 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(common["host_type"], "duet")
         self.assertEqual(common["autoemit_temperature_commands"], "0")
         self.assertEqual(common["use_relative_e_distances"], "1")
-        self.assertEqual(common["retract_length"], "0")
-        self.assertEqual(common["retract_lift"], "0")
+        self.assertEqual(common["retract_length"], "80")
+        self.assertEqual(common["retract_lift"], "5")
         self.assertEqual(common["retract_layer_change"], "0")
-        self.assertEqual(common["retract_speed"], "17")
+        self.assertEqual(common["retract_speed"], "80")
+        self.assertEqual(common["deretract_speed"], "80")
         self.assertEqual(common["pause_print_gcode"], "M25")
         start = common["start_gcode"].replace("\\n", "\n")
         end = common["end_gcode"].replace("\\n", "\n")
         self.assertIn("G28 ;Home all", start)
+        self.assertIn("G1 Z10 F1000", start)
         self.assertNotIn("M104", start)
         self.assertNotIn("M109", start)
         self.assertIn("G0 Z10 E-500 F1000", end)
@@ -118,7 +120,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(five.get("layer_height") or p["layer_height"], "1.5")
         self.assertEqual(five["extrusion_width"], "5")
 
-    def test_mid_print_retract_off_like_cura(self) -> None:
+    def test_mid_print_retract_near_bed(self) -> None:
         infill = self.ini["print:Infill @Potterbot 5mm"]
         self.assertEqual(infill["spiral_vase"], "0")
         self.assertEqual(infill["fill_density"], "15%")
@@ -127,12 +129,12 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(infill["top_solid_layers"], "3")
         self.assertEqual(infill["avoid_crossing_perimeters"], "1")
         printer = self.ini["printer:*common*"]
-        self.assertEqual(printer["retract_length"], "0")
-        self.assertEqual(printer["retract_lift"], "0")
+        self.assertEqual(printer["retract_length"], "80")
+        self.assertEqual(printer["retract_lift"], "5")
         self.assertEqual(printer["retract_layer_change"], "0")
         self.assertEqual(printer["retract_restart_extra"], "0")
-        self.assertEqual(printer["retract_speed"], "17")
-        self.assertEqual(printer["deretract_speed"], "17")
+        self.assertEqual(printer["retract_speed"], "80")
+        self.assertEqual(printer["deretract_speed"], "80")
         self.assertLess(float(printer["retract_speed"]), 85)
         self.assertNotEqual(printer["retract_speed"], "1000")
         self.assertNotEqual(printer["retract_length"], "1000")
@@ -140,6 +142,8 @@ class VendorStructureTests(unittest.TestCase):
         start = printer["start_gcode"].replace("\\n", "\n")
         self.assertNotIn("E-80", start)
         self.assertIn("G28 ;Home all", start)
+        self.assertIn("G1 Z10 F1000", start)
+        self.assertLess(start.index("G28 ;Home all"), start.index("G1 Z10 F1000"))
 
     def test_clay_filament_is_cold(self) -> None:
         f = self.ini["filament:Clay Potterbot"]

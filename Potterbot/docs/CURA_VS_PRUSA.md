@@ -1,8 +1,8 @@
 # Potterbot 9 — Cura vs PrusaSlicer audit
 
-Read-only comparison of the experimental PrusaSlicer bundle (**config 0.1.13**) against the official Cura **3D Potter Standard** machine and the Cura 5.12 jobs that actually run on this Duet.
+Read-only comparison of the experimental PrusaSlicer bundle (**config 0.1.14**) against the official Cura **3D Potter Standard** machine and the Cura 5.12 jobs that actually run on this Duet.
 
-The machine already ran a post-0.1.12 Prusa slice successfully (retract off). **0.1.13** sets print/travel acceleration to **3000 mm/s²** so `M204` matches firmware `M201` / Cura (which never slowed accel).
+The machine already ran a post-0.1.12 Prusa slice successfully (retract off). **0.1.13** sets print/travel acceleration to **3000 mm/s²** so `M204` matches firmware `M201` / Cura (which never slowed accel). **0.1.14** turns mid-print retract on (80 mm at 80 mm/s, 5 mm hop) and drops to Z10 after `G28`.
 
 ## Sources
 
@@ -12,7 +12,7 @@ The machine already ran a post-0.1.12 Prusa slice successfully (retract off). **
 | `reference/cura/no_bottom__layers.gcode` | Cura 5.12 hollow vase, 5 mm walls, 0 bottoms |
 | `reference/cura/Bottom_Layers.gcode` | Same model, 3 bottoms then spiral |
 | `reference/cura/CFFFP_Test.gcode` | Lab Cura 5.12 job that printed well (7 mm walls) |
-| `vendor/Potterbot.ini` | Generated PrusaSlicer bundle 0.1.13 |
+| `vendor/Potterbot.ini` | Generated PrusaSlicer bundle 0.1.14 |
 | `reference/firmware/config.g` | Live Duet: 420 × 360 × 400, `M83`, cold extrusion |
 | [3D Potter FAQ](https://3dpotter.com/faq/) | Cura is recommended; retract recipe is optional and **disabled** in the official 3mf |
 | [Duet G-code dictionary](https://docs.duet3d.com/User_manual/Reference/Gcodes) | On this firmware, **G0 = G1 in FFF mode**; `F` is mm/min |
@@ -28,7 +28,7 @@ Simplify3D jobs in `reference/simplify3d/` are 2019 (`Z` max 200, park `X320 Y70
 
 These are the values that matter on the ram, and they line up.
 
-| Item | Official Cura 3mf / 5.12 jobs | PrusaSlicer 0.1.13 |
+| Item | Official Cura 3mf / 5.12 jobs | PrusaSlicer 0.1.14 |
 | --- | --- | --- |
 | Start custom | `G28 ;Home all` only | Same (plus mode lines; see dialect) |
 | End custom | `G91` / `G0 Z10 E-500 F1000` / `G90` / `G28` | Same numbers and order |
@@ -37,7 +37,7 @@ These are the values that matter on the ram, and they line up.
 | Travel | 80 mm/s → `F4800` | 80 mm/s → `F4800` |
 | Top/bottom skin | 20 mm/s → `F1200` (`speed_topbottom`) | `solid_infill_speed` / `top_solid_infill_speed` 20 |
 | First layer / skirt | 40 mm/s (`speed_layer_0`, `skirt_brim_speed`) | `first_layer_speed` 40 — **not** 20 |
-| Mid-print retract | `retraction_enable = False` | `retract_length = 0`, `retract_lift = 0` |
+| Mid-print retract | `retraction_enable = False` | `retract_length = 80`, `retract_lift = 5`, `retract_speed = 80` (0.1.14; start drops to Z10) |
 | Temps / fan | 0 °C, fan off | 0 °C, `M107`, no heater wait |
 | Filament model | 1.75 mm, density 1.24, color `#55aaff` | Same |
 | Skirt | 3 loops, 8 mm gap | `skirts = 3`, `skirt_distance = 8` |
@@ -55,7 +55,7 @@ These are the values that matter on the ram, and they line up.
 
 RepRapFirmware 2.x on this Duet is in **FFF mode**. Duet docs: **G0 and G1 are treated the same**; `F` is honored on both. Cura’s `G0` travels are not “unlimited rapids.”
 
-| Topic | Cura 5.12 jobs | PrusaSlicer 0.1.13 |
+| Topic | Cura 5.12 jobs | PrusaSlicer 0.1.14 |
 | --- | --- | --- |
 | Flavor comment | `;FLAVOR:RepRap` / machine `RepRap (RepRap)` | `gcode_flavor = reprapfirmware` |
 | Travel moves | `G0 F4800 …` | Almost all `G1` (custom end still uses `G0`) |
@@ -85,7 +85,7 @@ Nominal print/travel mm/s match. Isolated Z hops and a few CuraEngine short-segm
 
 Cura 5.12 jobs never send `M204`, so print and travel use those firmware maxima.
 
-PrusaSlicer 0.1.13 sets every print/travel acceleration to **3000** (including first layer and short travel). It still emits `M204 P3000 T3000` because `gcode_flavor = reprapfirmware`. On Duet, P/T are mm/s²; **P3000 T3000 is the same XY accel Cura gets from `M201`**. Z moves remain limited to 1000 by firmware `M201 Z`.
+PrusaSlicer 0.1.14 sets every print/travel acceleration to **3000** (including first layer and short travel). It still emits `M204 P3000 T3000` because `gcode_flavor = reprapfirmware`. On Duet, P/T are mm/s²; **P3000 T3000 is the same XY accel Cura gets from `M201`**. Z moves remain limited to 1000 by firmware `M201 Z`.
 
 0.1.12 was slower (`P500` first layer, `P1000` print, `T2000` travel, `T500` short travel). Re-import 0.1.13 before comparing corners to Cura.
 
@@ -93,9 +93,9 @@ PrusaSlicer 0.1.13 sets every print/travel acceleration to **3000** (including f
 
 Firmware cap: `M203 Z1000` → **16.67 mm/s**.
 
-| Situation | Cura | Prusa 0.1.13 |
+| Situation | Cura | Prusa 0.1.14 |
 | --- | --- | --- |
-| First approach after `G28` | One `G0 F4800 X… Y… Z1.5` (XY asks 80 mm/s; **Z is firmware-limited to 16.67**, so the whole coordinated move is Z-limited) | `travel_speed_z = 16` → about `F960`. First travel should include Z down from 400 (no retract hop) |
+| First approach after `G28` | One `G0 F4800 X… Y… Z1.5` (XY asks 80 mm/s; **Z is firmware-limited to 16.67**, so the whole coordinated move is Z-limited) | Start `G1 Z10 F1000`, then slicer travel/hop from there (`travel_speed_z = 16` → about `F960`) |
 | Isolated Z on bottoms | `Bottom_Layers.gcode` has `G0 F600 Z3` (**10 mm/s**) between skin islands | Z travels at 16 mm/s |
 | End lift | `G0 Z10 E-500 F1000` (16.67 mm/s, Z+10 and ram together) | Same |
 
@@ -111,7 +111,7 @@ Cura `speed_layer_0 = 40`. `speed_topbottom = 20` is **solid skin**, not the fir
 
 [3D Potter FAQ](https://3dpotter.com/faq/) still lists 1000 mm at **1000 mm/s**, 5 mm lift, extra restart −10 mm. The official 3mf **stores** amount/speed 1000 but sets **`retraction_enable = False`**. Known-good Cura jobs never retract mid-print (only the end `E-500`).
 
-`config.g` `M203 E22000` is ~367 mm/s. FAQ 1000 mm/s cannot run on this motor (that stall is already documented). The bundle keeps retract **off**, with `retract_speed = 17` only as a safe UI default if someone turns length back on.
+`config.g` `M203 E22000` is ~367 mm/s. FAQ 1000 mm/s cannot run on this motor (that stall is already documented). **0.1.14** uses **80 mm at 80 mm/s** and a 5 mm hop, with start G-code `G1 Z10 F1000` after `G28` so the first retract is not at Z400. Extra restart stays 0 (Cura 3mf), not the FAQ −10.
 
 ### Other Cura-only / Prusa-only rates
 
@@ -162,7 +162,7 @@ G28 ;Home All
 M83
 ```
 
-PrusaSlicer 0.1.13 intended:
+PrusaSlicer 0.1.14 intended:
 
 ```text
 T0
@@ -171,9 +171,11 @@ G90
 M83
 M107
 G28 ;Home all
+G1 Z10 F1000               ; drop from Z400 before slicer retract
 G21 / G90 / M83 / M107     ; slicer repeat
-G1 … Z1.5 …                ; must include Z; must not E-80
-G1 F2400 … E…              ; skirt
+G1 E-80 …                  ; first retract at Z10, not Z400
+G1 … Z6.5 …                ; hop = layer + 5
+G1 F2400 … E…              ; skirt at ~Z1.5
 …
 G91
 G0 Z10 E-500 F1000
@@ -181,7 +183,7 @@ G90
 G28 ;Home all
 ```
 
-**0.1.11** (do not print) inserted `G1 E-80 F1020` then `G1 Z6.5` while the head was still at Z400. That is the “retract for several seconds then print at the top of Z” failure. 0.1.12 turns that off so the first travel can behave like Cura’s `G0 … Z1.5`.
+**0.1.11** (do not print) inserted `G1 E-80 F1020` then `G1 Z6.5` while the head was still at Z400. That is the “retract for several seconds then print at the top of Z” failure. 0.1.12 turned retract off. 0.1.14 turns it back on **after** the Z10 drop.
 
 End `E-500` at `F1000` is identical. Time is ram-dominated (~30 s for 500 mm at 16.67 mm/s) with a 10 mm relative Z lift. Cura then homes **all**; Prusa the same. Old Simplify3D ended `Z20`, parked `X320 Y70`, and `G28 Z` only.
 
@@ -189,7 +191,7 @@ End `E-500` at `F1000` is identical. Time is ram-dominated (~30 s for 500 mm at 
 
 ## Paths, fill, and extra presets
 
-| Topic | Cura | Prusa 0.1.13 |
+| Topic | Cura | Prusa 0.1.14 |
 | --- | --- | --- |
 | Hollow vase | 0 bottom, 0 top, spiral on | Vase Hollow: same |
 | 3-bottom vase | `bottom_layers = 3`, then spiral; `top_bottom_pattern = concentric` | Vase Bottom: 3 bottoms, spiral on; bottoms **Archimedean chords**, tops **rectilinear** |
@@ -222,17 +224,19 @@ Bottom fill pattern is a real path difference on Vase Bottom / Infill. Hollow sp
 5. **Archimedean bottoms vs Cura concentric** — only when bottoms exist.
 6. **1 mm tip 0.8 mm layer** — PrusaSlicer limit.
 7. **Infill preset** — extra; official Cura vase is 0% infill.
+8. **Mid-print retract on** — 80 mm / 80 mm/s / 5 mm hop. Official Cura jobs leave it off. Start drops to Z10 first.
 
 ---
 
 ## Checks on a new Prusa slice
 
-After re-importing 0.1.13, the exported file should look like Cura on these lines:
+After re-importing 0.1.14, the exported file should look like this:
 
-- After `G28`, the next **motion** includes **Z** near 1.5 (or a Z drop then XY), with **no** `E-80`.
+- After `G28`, the next **motion** is `G1 Z10 F1000`. The first `E-80` must be **after** that drop, not at Z400.
+- First bead near **Z1.5** (or 0.8 on the 1 mm tip), not hop height 6.5.
 - Skirt/print `F2400`, travel `F4800`, end `G0 Z10 E-500 F1000` then `G28`.
 - `M83` present; no `M104`/`M109` with S>0; XY inside 381 × 360.
-- Retract length 0 / Lift Z 0 in the printer preset.
+- Retract length 80 / Lift Z 5 / speed 80 in the printer preset.
 - If `M204` appears, **P** and **T** should be **3000**, not 500/1000/2000.
 
 If those hold, remaining mismatch is fill pattern and G0 vs G1 comments, not feeds or XY accel.
