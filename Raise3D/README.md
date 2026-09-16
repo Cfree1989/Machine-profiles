@@ -41,10 +41,10 @@ Then install the vendor profiles (A or B below). ideaMaker is rollback only; not
 
 ### A. Configuration Wizard (vendor bundle)
 
-1. Copy `vendor/Raise3D.ini`, `vendor/Raise3D.idx`, and the `vendor/Raise3D/` folder (bed texture) to `%APPDATA%\PrusaSlicer\vendor\`
+1. Copy `vendor/Raise3D.ini`, `vendor/Raise3D.idx`, and the whole `vendor/Raise3D/` folder to `%APPDATA%\PrusaSlicer\vendor\`. That folder holds the plater and wizard assets: `PRO2PLUS_HS_DUAL_bed.stl` (330 × 340 × 3/16 in plate, centred on the 305 × 305 printable area), `PRO2PLUS_HS_DUAL_texture.svg` (BuildTak surface, faint 10 / 50 mm grid, hatched orange T1 keep-out band), and `PRO2PLUS_HS_DUAL_thumbnail.png` (180 × 256 Configuration Wizard photo). PrusaSlicer 2.9.6 only draws the vendor plate when **both** the STL and the SVG are present; with the SVG alone (bundles before 0.5.49) it silently fell back to the plain grid.
 2. Restart PrusaSlicer
-3. **Configuration Wizard** → Other FFF → enable **Raise3D (experimental)** → Pro2 Plus Hyper Speed Dual 0.4
-4. Confirm PLA Raise3D (and the other Raise3D filaments if you want them) and **0.20mm Hyper Speed** appear with that printer selected
+3. **Configuration Wizard** → Other FFF → enable **Raise3D (experimental)** → Pro2 Plus Hyper Speed Dual 0.4 (the wizard shows the machine photo)
+4. Confirm PLA Raise3D (and the other Raise3D filaments if you want them) and **0.20mm Hyper Speed** appear with that printer selected, and that the plater shows the dark plate with the hatched band on the left
 
 If slicing fails on post-processing, check that `py -3 --version` works and that the two scripts exist at the path above.
 
@@ -54,7 +54,7 @@ If slicing fails on post-processing, check that `py -3 --version` works and that
 2. Select `vendor/Raise3D.ini`
 3. Select Dual, then PLA Raise3D and **0.20mm Hyper Speed**
 
-Import Config Bundle does not install `vendor/Raise3D/PRO2PLUS_HS_DUAL_texture.svg`. Copy that folder as in A if you want the orange T1 keep-out stripe on the plater. Default wipe tower X50 Y140 still applies.
+Import Config Bundle does not install the `vendor/Raise3D/` assets (bed STL, texture SVG, thumbnail). Copy that folder as in A if you want the plate and the hatched orange T1 keep-out band on the plater. Default wipe tower X50 Y140 still applies.
 
 ([PrusaSlicer: importing and exporting custom profiles](https://help.prusa3d.com/article/how-to-import-and-export-custom-profiles-in-prusaslicer_382766))
 
@@ -63,7 +63,7 @@ Import Config Bundle does not install `vendor/Raise3D/PRO2PLUS_HS_DUAL_texture.s
 1. Select **Raise3D Pro2 Plus Hyper Speed 0.4 Dual**.
 2. Load **PLA Raise3D** (or PETG/TPU/ASA/PA-CF/ABS-GF Raise3D) on filament slot 1 and slot 2 (or only the slot you will print with). These presets are tied to this Dual printer only (Filament → Dependencies).
 3. On the plater, set each object’s extruder (1 = left / T0, 2 = right / T1), or paint multi-material.
-4. Slice a small test. Wipe tower is on; default is **X50 Y140** so T1 can reach it. Drag it on the plater if you want. Unused nozzle drops to 180 °C on tool change. The orange stripe on the bed is T1 keep-out (leftmost ~25 mm).
+4. Slice a small test. Wipe tower is on; default is **X50 Y140** so T1 can reach it. Drag it on the plater if you want. Unused nozzle drops to 180 °C on tool change. The hatched orange band on the bed is T1 keep-out (leftmost ~25 mm); it is hatched rather than labelled because PrusaSlicer's SVG renderer (nanosvg) ignores text.
 5. Confirm `;Filament Name #1:` / `#2:` is **`[Raise3D] `** plus the selected `filament_type` (PLA still emits `[Raise3D] PLA`) and matches the names loaded on the printer. Custom G-code writes `{"[Raise3D] "}` so PrusaSlicer does not parse `[Raise3D]` as a variable.
 
 Right-only: assign the part to extruder 2. Start G-code heats T1 only, homes on T1, then uses the same `F140 E29` / `X80 Y0` wipe as left-only (from `RightonlyExtruder.gcode`, XY extended past ideaMaker `X20` so the fan clears the blob). Dual in-place `E10`/`E-11` is only when both tools are used. After purge, the first print travel stays at Z15 until print-start XY, then Z drops.
@@ -136,4 +136,18 @@ From this folder, or from the repo root with `-s Raise3D/tests`:
 
 ```text
 python -m unittest discover -s tests -v
+```
+
+## Regenerating the plater assets
+
+`vendor/Raise3D/PRO2PLUS_HS_DUAL_bed.stl` and `PRO2PLUS_HS_DUAL_texture.svg` are written by a standard-library script; edit the dimensions or colours there, not the files:
+
+```text
+python Raise3D/scripts/generate_assets.py
+```
+
+The wizard thumbnail is a one-off fit of a machine photo into 180 × 256 (PrusaSlicer's size). Only the PNG is committed; to redo it from a new photo:
+
+```text
+powershell -File tools\make_thumbnail.ps1 -Source photo.jpg -Destination Raise3D\vendor\Raise3D\PRO2PLUS_HS_DUAL_thumbnail.png
 ```

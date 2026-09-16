@@ -28,16 +28,16 @@ Simplify3D jobs in `reference/simplify3d/` are 2019 (`Z` max 200, park `X320 Y70
 
 These are the values that matter on the ram, and they line up.
 
-| Item | Official Cura 3mf / 5.12 jobs | PrusaSlicer 0.1.16 |
+| Item | Official Cura 3mf / 5.12 jobs | PrusaSlicer 0.1.17 |
 | --- | --- | --- |
-| Start custom | `G28 ;Home all` only | Vase printers: same. Retract printers: `G28` then `G1 Z10 F1000` |
+| Start custom | `G28 ;Home all` only | Same. The Clay Potterbot Retract filament adds `G1 Z10 F1000` right after it |
 | End custom | `G91` / `G0 Z10 E-500 F1000` / `G90` / `G28` | Same numbers and order |
 | Layer height | 1.5 mm Fine (`layer_height` = `layer_height_0`) | 1.5 mm (1 mm tip is 0.8 mm; see below) |
 | Print / wall | 40 mm/s → `F2400` | 40 mm/s → `F2400` |
 | Travel | 80 mm/s → `F4800` | 80 mm/s → `F4800` |
 | Top/bottom skin | 20 mm/s → `F1200` (`speed_topbottom`) | `solid_infill_speed` / `top_solid_infill_speed` 20 |
 | First layer / skirt | 40 mm/s (`speed_layer_0`, `skirt_brim_speed`) | `first_layer_speed` 40 — **not** 20 |
-| Mid-print retract | `retraction_enable = False` | Vase printers: length/lift 0. Retract printers: 80 mm / 5 mm hop after layer 0 (`retract_lift_above` 1.6) / 80 mm/s |
+| Mid-print retract | `retraction_enable = False` | Printer: length/lift 0. Clay Potterbot: same. Clay Potterbot Retract filament: 80 mm / 5 mm hop after layer 0 (`retract_lift_above` 1.6) / 80 mm/s |
 | Temps / fan | 0 °C, fan off | 0 °C, `M107`, no heater wait |
 | Filament model | 1.75 mm, density 1.24, color `#55aaff` | Same |
 | Skirt | 3 loops, 8 mm gap | `skirts = 3`, `skirt_distance = 8` |
@@ -111,7 +111,7 @@ Cura `speed_layer_0 = 40`. `speed_topbottom = 20` is **solid skin**, not the fir
 
 [3D Potter FAQ](https://3dpotter.com/faq/) still lists 1000 mm at **1000 mm/s**, 5 mm lift, extra restart −10 mm. The official 3mf **stores** amount/speed 1000 but sets **`retraction_enable = False`**. Known-good Cura jobs never retract mid-print (only the end `E-500`).
 
-`config.g` `M203 E22000` is ~367 mm/s. FAQ 1000 mm/s cannot run on this motor (that stall is already documented). **0.1.16** keeps vase printers at retract **off**. Retract printers use **80 mm at 80 mm/s** and a 5 mm hop after layer 0, with start G-code `G1 Z10 F1000` after `G28` so the first retract is not at Z400. Extra restart stays 0 (Cura 3mf), not the FAQ −10.
+`config.g` `M203 E22000` is ~367 mm/s. FAQ 1000 mm/s cannot run on this motor (that stall is already documented). **0.1.17** keeps the printer and the **Clay Potterbot** filament at retract **off**. The **Clay Potterbot Retract** filament overrides to **80 mm at 80 mm/s** and a 5 mm hop after layer 0, and its filament start G-code is `G1 Z10 F1000` (emitted after the printer's `G28`) so the first retract is not at Z400. Extra restart stays 0 (Cura 3mf), not the FAQ −10.
 
 ### Other Cura-only / Prusa-only rates
 
@@ -162,7 +162,7 @@ G28 ;Home All
 M83
 ```
 
-PrusaSlicer 0.1.15 vase printers match Cura’s first travel (`G28`, then `G1 … Z1.5`, no `E-80`). Retract printers:
+PrusaSlicer with **Clay Potterbot** matches Cura’s first travel (`G28`, then `G1 … Z1.5`, no `E-80`). With **Clay Potterbot Retract**:
 
 ```text
 T0
@@ -171,6 +171,7 @@ G90
 M83
 M107
 G28 ;Home all
+; Clay Potterbot Retract     ; start_filament_gcode
 G1 Z10 F1000               ; drop from Z400 before slicer retract
 G21 / G90 / M83 / M107     ; slicer repeat
 G1 E-80 …                  ; first retract at Z10, not Z400
@@ -183,7 +184,7 @@ G90
 G28 ;Home all
 ```
 
-**0.1.11** (do not print) inserted `G1 E-80 F1020` then `G1 Z6.5` while the head was still at Z400. That is the “retract for several seconds then print at the top of Z” failure. 0.1.12 turned retract off. 0.1.14 turned it on for every printer. 0.1.15 keeps it on **only** for Retract printers, after the Z10 drop.
+**0.1.11** (do not print) inserted `G1 E-80 F1020` then `G1 Z6.5` while the head was still at Z400. That is the “retract for several seconds then print at the top of Z” failure. 0.1.12 turned retract off. 0.1.14 turned it on for every printer. 0.1.15–0.1.16 kept it on only for a second set of Retract printers, after the Z10 drop. 0.1.17 moves that to the Clay Potterbot Retract filament so there is one printer.
 
 End `E-500` at `F1000` is identical. Time is ram-dominated (~30 s for 500 mm at 16.67 mm/s) with a 10 mm relative Z lift. Cura then homes **all**; Prusa the same. Old Simplify3D ended `Z20`, parked `X320 Y70`, and `G28 Z` only.
 
@@ -207,7 +208,8 @@ Bottom fill pattern is a real path difference on Vase Bottom / Infill. Hollow sp
 
 ## Naming and UI, not motion
 
-- Cura machine name: **3D Potter Standard**. Wizard vendor: **3D Potter (experimental)**; printers **1mm Nozzle** … **10mm Nozzle** (vase) and **1mm Nozzle Retract** … **10mm Nozzle Retract** (Infill).
+- Cura machine name: **3D Potter Standard**. Wizard vendor: **3D Potter (experimental)**; one printer **3D Potterbot 9** with variants **1mm Nozzle** … **10mm Nozzle**; filaments **Clay Potterbot** (vase) and **Clay Potterbot Retract** (Infill, or vase). `NO_TEMPLATES` in the printer notes hides PrusaSlicer's Template filaments.
+- Wizard thumbnail and plater bat (`vendor/Potterbot/`) are cosmetic; Cura has neither.
 - FAQ nozzle range is typically 1–8 mm; this pack also has 9 and 10 mm variants.
 - Cura quality container is named **Fine** with 1.5 mm layer. Prusa print names omit the layer height.
 - Pause: slicer `M25`. Board `pause.g` runs **`G28`** — do not paste that into the profile (already documented).
@@ -224,19 +226,19 @@ Bottom fill pattern is a real path difference on Vase Bottom / Infill. Hollow sp
 5. **Archimedean bottoms vs Cura concentric** — only when bottoms exist.
 6. **1 mm tip 0.8 mm layer** — PrusaSlicer limit.
 7. **Infill preset** — extra; official Cura vase is 0% infill.
-8. **Retract printers** — Infill only. Vase matches official Cura (retract off). Retract printers are 80 mm / 80 mm/s / 5 mm hop after layer 0, with a Z10 drop after `G28`.
+8. **Clay Potterbot Retract filament** — required for Infill, optional for vase. Clay Potterbot matches official Cura (retract off). The Retract filament is 80 mm / 80 mm/s / 5 mm hop after layer 0, with a Z10 drop after `G28`.
 
 ---
 
 ## Checks on a new Prusa slice
 
-After re-importing 0.1.16, the exported file should look like this:
+After re-importing 0.1.17, the exported file should look like this:
 
-- Vase: after `G28`, the next **motion** includes **Z** near 1.5, with **no** `E-80`.
-- Retract / Infill: after `G28`, the next **motion** is `G1 Z10 F1000`. The first `E-80` must be **after** that drop, not at Z400. Skirt unretracts at **Z1.5** (no hop on layer 0). Hops start on later layers.
+- Clay Potterbot (vase): after `G28`, the next **motion** includes **Z** near 1.5, with **no** `E-80`.
+- Clay Potterbot Retract (Infill or vase): after `G28`, the next **motion** is `G1 Z10 F1000`. The first `E-80` must be **after** that drop, not at Z400. Skirt unretracts at **Z1.5** (no hop on layer 0). Hops start on later layers.
 - Skirt/print `F2400`, travel `F4800`, end `G0 Z10 E-500 F1000` then `G28`.
 - `M83` present; no `M104`/`M109` with S>0; XY inside 381 × 360.
-- Vase printer: retract length 0. Retract printer: length 80 / Lift Z 5 / speed 80.
+- Printer: retract length 0. Clay Potterbot Retract: filament override length 80 / Lift Z 5; speed 80 comes from the printer.
 - If `M204` appears, **P** and **T** should be **3000**, not 500/1000/2000.
 
 If those hold, remaining mismatch is fill pattern and G0 vs G1 comments, not feeds or XY accel.

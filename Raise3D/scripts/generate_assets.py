@@ -1,0 +1,212 @@
+"""Generate the Raise3D vendor-folder assets PrusaSlicer draws on the plater.
+
+Writes vendor/Raise3D/PRO2PLUS_HS_DUAL_bed.stl (the 330 x 340 mm build plate)
+and vendor/Raise3D/PRO2PLUS_HS_DUAL_texture.svg (BuildTak surface with the T1
+keep-out band).
+
+PrusaSlicer 2.9.6 only draws a vendor bed when BOTH bed_model and bed_texture
+resolve (Bed3D::detect_type), so both files are required. The STL origin is
+placed at the centre of bed_shape with Z 0 at the plate top, and the texture is
+stretched over the bed_shape rectangle (image top = back of the bed).
+nanosvg does not render <text>, so the keep-out band is hatched instead of
+labelled.
+
+Standard library only. The wizard thumbnail (PRO2PLUS_HS_DUAL_thumbnail.png) is
+a one-off image crop; see tools/make_thumbnail.ps1.
+"""
+
+from __future__ import annotations
+
+import math
+import random
+import struct
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+ASSET_DIR = ROOT / "vendor" / "Raise3D"
+BED_STL = ASSET_DIR / "PRO2PLUS_HS_DUAL_bed.stl"
+BED_SVG = ASSET_DIR / "PRO2PLUS_HS_DUAL_texture.svg"
+
+# Printable area (bed_shape in the bundle).
+BED_X = 305.0
+BED_Y = 305.0
+
+# Physical plate: 330 x 340 mm, ~3/16 in thick, rounded corners, assumed
+# centred on the printable area (12.5 mm each side in X, 17.5 mm front/back).
+PLATE_X = 330.0
+PLATE_Y = 340.0
+PLATE_THICKNESS = 4.7625
+PLATE_CORNER_RADIUS = 6.0
+CORNER_SEGMENTS = 8
+
+# T1 (right nozzle) cannot reach the leftmost ~25 mm (firmware X offset).
+T1_KEEPOUT_X = 25.0
+
+# BuildTak look.
+PLATE_FILL = "#383838"
+PLATE_SPECKLE = "#4C4C4C"
+PLATE_EDGE = "#9A9A9A"
+GRID_STROKE = "#DDDDDD"
+LOGO_STROKE = "#9A9A9A"
+KEEPOUT_FILL = "#C45C26"
+SPECKLE_COUNT = 2200
+SPECKLE_SEED = 20260916
+
+
+def rounded_rect(
+    x0: float, y0: float, x1: float, y1: float, radius: float, segments: int
+) -> list[tuple[float, float]]:
+    """Counter-clockwise outline of a rounded rectangle."""
+    r = min(radius, (x1 - x0) / 2, (y1 - y0) / 2)
+    corners = [
+        (x1 - r, y0 + r, -90.0),
+        (x1 - r, y1 - r, 0.0),
+        (x0 + r, y1 - r, 90.0),
+        (x0 + r, y0 + r, 180.0),
+    ]
+    points: list[tuple[float, float]] = []
+    for cx, cy, start in corners:
+        for i in range(segments + 1):
+            a = math.radians(start + 90.0 * i / segments)
+            points.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    return points
+
+
+def prism_triangles(
+    outline: list[tuple[float, float]], z_bottom: float, z_top: float
+) -> list[tuple[tuple[float, float, float], ...]]:
+    """Triangles (CCW seen from outside) for a convex prism."""
+    cx = sum(p[0] for p in outline) / len(outline)
+    cy = sum(p[1] for p in outline) / len(outline)
+    tris: list[tuple[tuple[float, float, float], ...]] = []
+    n = len(outline)
+    for i in range(n):
+        ax, ay = outline[i]
+        bx, by = outline[(i + 1) % n]
+        tris.append(((cx, cy, z_top), (ax, ay, z_top), (bx, by, z_top)))
+        tris.append(((cx, cy, z_bottom), (bx, by, z_bottom), (ax, ay, z_bottom)))
+        tris.append(((ax, ay, z_bottom), (bx, by, z_bottom), (bx, by, z_top)))
+        tris.append(((ax, ay, z_bottom), (bx, by, z_top), (ax, ay, z_top)))
+    return tris
+
+
+def normal(tri: tuple[tuple[float, float, float], ...]) -> tuple[float, float, float]:
+    (ax, ay, az), (bx, by, bz), (cx, cy, cz) = tri
+    ux, uy, uz = bx - ax, by - ay, bz - az
+    vx, vy, vz = cx - ax, cy - ay, cz - az
+    nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
+    length = math.sqrt(nx * nx + ny * ny + nz * nz) or 1.0
+    return (nx / length, ny / length, nz / length)
+
+
+def write_binary_stl(path: Path, tris: list[tuple[tuple[float, float, float], ...]], name: str) -> None:
+    header = name.encode("ascii")[:80].ljust(80, b"\0")
+    out = bytearray(header)
+    out += struct.pack("<I", len(tris))
+    for tri in tris:
+        out += struct.pack("<3f", *normal(tri))
+        for v in tri:
+            out += struct.pack("<3f", *v)
+        out += struct.pack("<H", 0)
+    path.write_bytes(bytes(out))
+
+
+def plate_stl_triangles() -> list[tuple[tuple[float, float, float], ...]]:
+    # PrusaSlicer puts the STL origin at the bed_shape centre; the plate is
+    # centred there, so model coordinates run X -165..165, Y -170..170.
+    outline = rounded_rect(-PLATE_X / 2, -PLATE_Y / 2, PLATE_X / 2, PLATE_Y / 2, PLATE_CORNER_RADIUS, CORNER_SEGMENTS)
+    return prism_triangles(outline, -PLATE_THICKNESS, 0.0)
+
+
+def hexagon_points(cx: float, cy: float, r: float) -> str:
+    pts = []
+    for i in range(6):
+        a = math.radians(90.0 + 60.0 * i)
+        pts.append(f"{cx + r * math.cos(a):.2f},{cy - r * math.sin(a):.2f}")
+    return " ".join(pts)
+
+
+def plate_svg() -> str:
+    rng = random.Random(SPECKLE_SEED)
+    lines = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{BED_X:g}mm" height="{BED_Y:g}mm" viewBox="0 0 {BED_X:g} {BED_Y:g}">',
+        "  <!-- Generated by scripts/generate_assets.py. Printable 305 x 305 mm of the BuildTak plate. -->",
+        "  <!-- Visual only: T1 cannot reach the far left (~25 mm firmware X offset). T0 still uses the full bed. -->",
+        "  <!-- nanosvg (PrusaSlicer) does not render text or patterns, so the keep-out band is hatched, not labelled. -->",
+        f'  <rect width="{BED_X:g}" height="{BED_Y:g}" fill="{PLATE_FILL}"/>',
+    ]
+    # Fine speckle for the matte BuildTak surface.
+    for _ in range(SPECKLE_COUNT):
+        x = rng.uniform(0.0, BED_X)
+        y = rng.uniform(0.0, BED_Y)
+        r = rng.uniform(0.2, 0.7)
+        opacity = rng.uniform(0.3, 0.8)
+        lines.append(
+            f'  <circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.2f}" fill="{PLATE_SPECKLE}" fill-opacity="{opacity:.2f}"/>'
+        )
+    # Faint 10 mm grid with stronger 50 mm lines for placement (like the Prusa sheets).
+    for x in range(10, int(BED_X), 10):
+        strong = x % 50 == 0
+        lines.append(
+            f'  <line x1="{x}" y1="0" x2="{x}" y2="{BED_Y:g}" stroke="{GRID_STROKE}" '
+            f'stroke-width="{0.5 if strong else 0.3}" stroke-opacity="{0.18 if strong else 0.08}"/>'
+        )
+    for y in range(10, int(BED_Y), 10):
+        strong = y % 50 == 0
+        lines.append(
+            f'  <line x1="0" y1="{y}" x2="{BED_X:g}" y2="{y}" stroke="{GRID_STROKE}" '
+            f'stroke-width="{0.5 if strong else 0.3}" stroke-opacity="{0.18 if strong else 0.08}"/>'
+        )
+    # Hexagon mark near the front-right corner (SVG y grows toward the front of the bed).
+    hx, hy, hr = BED_X - 22.0, BED_Y - 22.0, 9.0
+    lines.append(
+        f'  <polygon points="{hexagon_points(hx, hy, hr)}" fill="none" stroke="{LOGO_STROKE}" stroke-width="1.2" stroke-opacity="0.9"/>'
+    )
+    lines.append(
+        f'  <polygon points="{hx:.2f},{hy - 5.0:.2f} {hx + 4.3:.2f},{hy + 3.5:.2f} {hx - 4.3:.2f},{hy + 3.5:.2f}" '
+        f'fill="none" stroke="{LOGO_STROKE}" stroke-width="1.2" stroke-opacity="0.9"/>'
+    )
+    # T1 keep-out band: translucent fill plus diagonal hatching that stays inside x 0..25.
+    lines.append(
+        f'  <rect x="0" y="0" width="{T1_KEEPOUT_X:g}" height="{BED_Y:g}" fill="{KEEPOUT_FILL}" fill-opacity="0.35"/>'
+    )
+    step = 8.0
+    y = -T1_KEEPOUT_X
+    while y < BED_Y:
+        y0 = y
+        y1 = y + T1_KEEPOUT_X
+        # Clip the segment to the band vertically.
+        x_start, x_end = 0.0, T1_KEEPOUT_X
+        if y0 < 0.0:
+            x_start = -y0
+            y0 = 0.0
+        if y1 > BED_Y:
+            x_end = T1_KEEPOUT_X - (y1 - BED_Y)
+            y1 = BED_Y
+        if x_end > x_start:
+            lines.append(
+                f'  <line x1="{x_start:.1f}" y1="{y0:.1f}" x2="{x_end:.1f}" y2="{y1:.1f}" '
+                f'stroke="{KEEPOUT_FILL}" stroke-width="0.8" stroke-opacity="0.7"/>'
+            )
+        y += step
+    lines.append(
+        f'  <line x1="{T1_KEEPOUT_X:g}" y1="0" x2="{T1_KEEPOUT_X:g}" y2="{BED_Y:g}" stroke="{KEEPOUT_FILL}" stroke-width="1" stroke-opacity="0.9"/>'
+    )
+    # Printable-area edge.
+    lines.append(
+        f'  <rect x="0.5" y="0.5" width="{BED_X - 1:g}" height="{BED_Y - 1:g}" fill="none" stroke="{PLATE_EDGE}" stroke-width="1" stroke-opacity="0.8"/>'
+    )
+    lines.append("</svg>")
+    return "\n".join(lines) + "\n"
+
+
+def main() -> None:
+    ASSET_DIR.mkdir(parents=True, exist_ok=True)
+    write_binary_stl(BED_STL, plate_stl_triangles(), "Raise3D Pro2 Plus plate 330x340x4.76 mm, origin at bed_shape centre")
+    BED_SVG.write_text(plate_svg(), encoding="utf-8", newline="\n")
+    print(f"Wrote {BED_STL}")
+    print(f"Wrote {BED_SVG}")
+
+
+if __name__ == "__main__":
+    main()

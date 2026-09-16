@@ -24,7 +24,7 @@ From `reference/cura/3D Potter Standard.3mf` (Cura machine) and the Cura 5.12 jo
 | Skirt | 3 loops, 8 mm gap |
 | Spiral vase | on |
 | Infill / top | 0 / 0 |
-| Retract during print | off (vase printers); 80 mm / 80 mm/s / 5 mm hop (Retract printers) |
+| Retract during print | off (Clay Potterbot filament); 80 mm / 80 mm/s / 5 mm hop (Clay Potterbot Retract filament) |
 | Temps / fan | 0 / off |
 | Filament diameter | 1.75 mm (volumetric model for the ram) |
 
@@ -40,11 +40,13 @@ Official Cura **3D Potter Standard** stores `retraction_amount = 1000` / `retrac
 
 The [3D Potter FAQ](https://3dpotter.com/faq/) mid-print recipe (1000 mm at 1000 mm/s) exceeds `config.g` `M203 E22000` (367 mm/s) and is what stalled the ram motor in Cura.
 
-This bundle splits printers. **1mm–10mm Nozzle** (vase) keep mid-print retract **off** (`retract_length = 0`, `retract_lift = 0`) and official Cura start (`G28` only). **1mm–10mm Nozzle Retract** (Infill) use `retract_length = 80`, `retract_speed = 80`, `deretract_speed = 80`, `retract_lift = 5`, `retract_lift_above` = first layer + 0.1 mm (**1.6** on 1.5 mm Fine, **0.9** on the 1 mm tip) so layer 0 / the skirt does not hop. Extra restart **0**, wipe **off**. Not the FAQ 1000 mm/s. After `G28`, Retract start G-code drops to **Z10** (`G1 Z10 F1000`) so the first slicer retract is near the bat. 0.1.11’s `E-80` hop without that drop ran the ram at Z400, then treated `G1 Z6.5` as a hop from layer height. End G-code is still `G0 Z10 E-500 F1000` on both.
+This bundle puts retraction on the **filament** (0.1.17; 0.1.15–0.1.16 used a second set of “Retract” printers). The single printer, **1mm–10mm Nozzle**, keeps mid-print retract **off** (`retract_length = 0`, `retract_lift = 0`) and the official Cura start (`G28` only); it carries `retract_speed = 80`, `deretract_speed = 80`, and `retract_lift_above` = first layer + 0.1 mm (**1.6** on 1.5 mm Fine, **0.9** on the 1 mm tip) so that the values are ready when a filament turns retraction on. **Clay Potterbot** adds nothing, so it is byte-identical to Cura’s unretracted behaviour, and its `compatible_prints_condition = spiral_vase==1` keeps it off the Infill profile. **Clay Potterbot Retract** sets `filament_retract_length = 80` and `filament_retract_lift = 5` (PrusaSlicer filament overrides) so layer 0 / the skirt does not hop; extra restart **0**, wipe **off**. Not the FAQ 1000 mm/s. Its `start_filament_gcode` is `G1 Z10 F1000`, which PrusaSlicer emits right after the printer start G-code and before the first travel, so the first slicer retract is near the bat. 0.1.11’s `E-80` hop without that drop ran the ram at Z400, then treated `G1 Z6.5` as a hop from layer height. End G-code is still `G0 Z10 E-500 F1000` for both clays.
 
 ## Bed vs bat
 
 Official Cura machine is **420 × 360 × 400** (firmware travel). The physical bat is **15×15″ (381 × 381 mm)**. This bundle uses **381 × 360 × 400** so the plater matches the bat and does not ask for Y past firmware travel.
+
+The plater draws the real bat from `vendor/Potterbot/POTTERBOT9_bed.stl` (381 × 381 × 6.35 mm, 12.7 mm corner radius, placed so its front-left corner is bed X0 Y0 and it overhangs the printable Y by 21 mm at the back) with `POTTERBOT9_texture.svg` stretched over the 381 × 360 printable area. PrusaSlicer 2.9.6 draws a vendor plate only when both `bed_model` and `bed_texture` resolve in `%APPDATA%\PrusaSlicer\vendor\Potterbot\`; otherwise it silently falls back to the plain grid. `scripts/generate_assets.py` regenerates both.
 
 ## Macros (do not paste blindly)
 

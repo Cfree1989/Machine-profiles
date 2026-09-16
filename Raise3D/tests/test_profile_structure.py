@@ -3,12 +3,34 @@
 from __future__ import annotations
 
 import configparser
+import struct
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VENDOR = ROOT / "vendor" / "Raise3D.ini"
 IDX = ROOT / "vendor" / "Raise3D.idx"
+BUNDLE = ROOT / "profiles" / "Raise3D-Pro2Plus-HS-0.4-bundle.ini"
+ASSETS = ROOT / "vendor" / "Raise3D"
+
+
+def stl_bounds(path: Path) -> tuple[int, tuple[float, float], tuple[float, float], tuple[float, float]]:
+    data = path.read_bytes()
+    count = struct.unpack_from("<I", data, 80)[0]
+    if len(data) != 84 + 50 * count:
+        raise AssertionError(f"{path.name}: binary STL size mismatch ({len(data)} bytes for {count} triangles)")
+    xs: list[float] = []
+    ys: list[float] = []
+    zs: list[float] = []
+    offset = 84
+    for _ in range(count):
+        values = struct.unpack_from("<12f", data, offset)
+        offset += 50
+        for k in range(3):
+            xs.append(values[3 + 3 * k])
+            ys.append(values[4 + 3 * k])
+            zs.append(values[5 + 3 * k])
+    return count, (min(xs), max(xs)), (min(ys), max(ys)), (min(zs), max(zs))
 
 
 class VendorStructureTests(unittest.TestCase):
@@ -26,10 +48,39 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertIn("vendor", self.ini)
         self.assertEqual(self.ini["vendor"]["name"], "Raise3D (experimental)")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.48")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.49")
+        self.assertIn("0.5.49 ", IDX.read_text(encoding="utf-8"))
         self.assertNotIn("printer_model:PRO2PLUS_HS", self.ini)
         self.assertIn("printer_model:PRO2PLUS_HS_DUAL", self.ini)
         self.assertNotIn("printer:Raise3D Pro2 Plus Hyper Speed 0.4 Left", self.ini)
+        self.assertEqual(VENDOR.read_text(encoding="utf-8"), BUNDLE.read_text(encoding="utf-8"))
+
+    def test_vendor_assets_for_plater_and_wizard(self) -> None:
+        model = self.ini["printer_model:PRO2PLUS_HS_DUAL"]
+        # PrusaSlicer 2.9.6 only draws the vendor bed when bed_model AND bed_texture both resolve.
+        self.assertEqual(model["bed_model"], "PRO2PLUS_HS_DUAL_bed.stl")
+        self.assertEqual(model["bed_texture"], "PRO2PLUS_HS_DUAL_texture.svg")
+        self.assertEqual(model["thumbnail"], "PRO2PLUS_HS_DUAL_thumbnail.png")
+        for name in (model["bed_model"], model["bed_texture"], model["thumbnail"]):
+            self.assertTrue((ASSETS / name).is_file(), name)
+        count, (x0, x1), (y0, y1), (z0, z1) = stl_bounds(ASSETS / model["bed_model"])
+        self.assertGreater(count, 0)
+        # 330 x 340 x 3/16 in plate centred on the 305 x 305 bed_shape, top at Z 0.
+        self.assertAlmostEqual(x0, -165.0, places=2)
+        self.assertAlmostEqual(x1, 165.0, places=2)
+        self.assertAlmostEqual(y0, -170.0, places=2)
+        self.assertAlmostEqual(y1, 170.0, places=2)
+        self.assertAlmostEqual(z1, 0.0, places=2)
+        self.assertAlmostEqual(z0, -4.76, places=2)
+        svg = (ASSETS / model["bed_texture"]).read_text(encoding="utf-8")
+        self.assertIn('viewBox="0 0 305 305"', svg)
+        self.assertNotIn("<text", svg)  # nanosvg does not render text
+        self.assertNotIn("<pattern", svg)
+        self.assertIn('width="25"', svg)  # T1 keep-out band
+        png = (ASSETS / model["thumbnail"]).read_bytes()
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+        width, height = struct.unpack(">II", png[16:24])
+        self.assertEqual((width, height), (180, 256))
 
     def test_print_and_filament_are_tied_to_dual_printer(self) -> None:
         filament = self.ini["filament:PLA Raise3D"]

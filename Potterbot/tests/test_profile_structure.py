@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import configparser
+import struct
 import unittest
 from pathlib import Path
 
@@ -10,6 +11,29 @@ ROOT = Path(__file__).resolve().parents[1]
 VENDOR = ROOT / "vendor" / "Potterbot.ini"
 IDX = ROOT / "vendor" / "Potterbot.idx"
 BUNDLE = ROOT / "profiles" / "Potterbot-9-bundle.ini"
+ASSETS = ROOT / "vendor" / "Potterbot"
+
+CLAY = "Clay Potterbot"
+CLAY_RETRACT = "Clay Potterbot Retract"
+
+
+def stl_bounds(path: Path) -> tuple[int, tuple[float, float], tuple[float, float], tuple[float, float]]:
+    data = path.read_bytes()
+    count = struct.unpack_from("<I", data, 80)[0]
+    if len(data) != 84 + 50 * count:
+        raise AssertionError(f"{path.name}: binary STL size mismatch ({len(data)} bytes for {count} triangles)")
+    xs: list[float] = []
+    ys: list[float] = []
+    zs: list[float] = []
+    offset = 84
+    for _ in range(count):
+        values = struct.unpack_from("<12f", data, offset)
+        offset += 50
+        for k in range(3):
+            xs.append(values[3 + 3 * k])
+            ys.append(values[4 + 3 * k])
+            zs.append(values[5 + 3 * k])
+    return count, (min(xs), max(xs)), (min(ys), max(ys)), (min(zs), max(zs))
 
 
 class VendorStructureTests(unittest.TestCase):
@@ -27,17 +51,24 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertTrue(BUNDLE.is_file())
         self.assertEqual(VENDOR.read_text(encoding="utf-8"), BUNDLE.read_text(encoding="utf-8"))
+        self.assertIn("0.1.17 ", IDX.read_text(encoding="utf-8"))
 
-    def test_vendor_and_model(self) -> None:
+    def test_single_printer_model(self) -> None:
         self.assertEqual(self.ini["vendor"]["name"], "3D Potter (experimental)")
         self.assertEqual(self.ini["vendor"]["repo_id"], "non-prusa-fff")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.16")
-        self.assertEqual(self.ini["printer_model:POTTERBOT9"]["variants"], "1;2;3;4;5;6;7;8;9;10")
-        self.assertEqual(self.ini["printer_model:POTTERBOT9"]["default_materials"], "Clay Potterbot")
-        self.assertEqual(self.ini["printer_model:POTTERBOT9R"]["name"], "3D Potterbot 9 Retract (experimental)")
-        self.assertEqual(self.ini["printer_model:POTTERBOT9R"]["variants"], "1;2;3;4;5;6;7;8;9;10")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.17")
+        model = self.ini["printer_model:POTTERBOT9"]
+        self.assertEqual(model["variants"], "1;2;3;4;5;6;7;8;9;10")
+        self.assertEqual(model["default_materials"], f"{CLAY};{CLAY_RETRACT}")
+        self.assertEqual(model["bed_model"], "POTTERBOT9_bed.stl")
+        self.assertEqual(model["bed_texture"], "POTTERBOT9_texture.svg")
+        self.assertEqual(model["thumbnail"], "POTTERBOT9_thumbnail.png")
+        models = [s for s in self.ini.sections() if s.startswith("printer_model:")]
+        self.assertEqual(models, ["printer_model:POTTERBOT9"])
+        self.assertNotIn("printer_model:POTTERBOT9R", self.ini)
+        self.assertNotIn("CLAY_TRAVEL", self.raw)
 
-    def test_printer_common_is_cold_rrf(self) -> None:
+    def test_printer_common_is_cold_rrf_unretracted(self) -> None:
         common = self.ini["printer:*common*"]
         self.assertEqual(common["gcode_flavor"], "reprapfirmware")
         self.assertEqual(common["host_type"], "duet")
@@ -46,13 +77,16 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(common["retract_length"], "0")
         self.assertEqual(common["retract_lift"], "0")
         self.assertEqual(common["retract_layer_change"], "0")
+        self.assertEqual(common["retract_before_travel"], "15")
         self.assertEqual(common["retract_speed"], "80")
         self.assertEqual(common["deretract_speed"], "80")
         self.assertEqual(common["pause_print_gcode"], "M25")
+        self.assertEqual(common["default_filament_profile"], f'"{CLAY}"')
         start = common["start_gcode"].replace("\\n", "\n")
         end = common["end_gcode"].replace("\\n", "\n")
         self.assertIn("G28 ;Home all", start)
         self.assertNotIn("G1 Z10 F1000", start)
+        self.assertNotIn("E-80", start)
         self.assertNotIn("M104", start)
         self.assertNotIn("M109", start)
         self.assertIn("G0 Z10 E-500 F1000", end)
@@ -64,25 +98,46 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(p["max_print_height"], "400")
         self.assertEqual(p["nozzle_diameter"], "5")
 
-    def test_ten_nozzle_variants_and_two_vase_modes(self) -> None:
+    def test_ten_nozzle_printers_three_prints_each(self) -> None:
         common = self.ini["print:*common*"]
         self.assertEqual(common["layer_height"], "1.5")
         self.assertEqual(common["first_layer_height"], "1.5")
+        printers = [s for s in self.ini.sections() if s.startswith("printer:") and s != "printer:*common*"]
+        self.assertEqual(len(printers), 10)
         for nozzle in range(1, 11):
             self.assertIn(f"printer:{nozzle}mm Nozzle", self.ini)
-            self.assertIn(f"printer:{nozzle}mm Nozzle Retract", self.ini)
+            self.assertNotIn(f"printer:{nozzle}mm Nozzle Retract", self.ini)
             printer = self.ini[f"printer:{nozzle}mm Nozzle"]
+            self.assertEqual(printer["printer_model"], "POTTERBOT9")
+            self.assertEqual(printer["printer_variant"], str(nozzle))
             layer = min(1.5, 0.8 * float(nozzle))
             self.assertGreaterEqual(float(printer["max_layer_height"]), layer)
             self.assertLess(layer, float(printer["nozzle_diameter"]))
-            self.assertIn(f"print:Vase Hollow @Potterbot {nozzle}mm", self.ini)
-            self.assertIn(f"print:Vase Bottom @Potterbot {nozzle}mm", self.ini)
-            self.assertIn(f"print:Infill @Potterbot {nozzle}mm", self.ini)
+            notes = printer["printer_notes"]
+            for keyword in ("PRINTER_VENDOR_POTTERBOT", "PRINTER_MODEL_9", "NO_TEMPLATES", "EXPERIMENTAL"):
+                self.assertIn(keyword, notes)
+            # Hop threshold lives on the printer so the Retract filament's lift
+            # starts just above this nozzle's first layer.
+            expected_lift_above = "0.9" if nozzle == 1 else "1.6"
+            self.assertEqual(printer["retract_lift_above"], expected_lift_above)
+            self.assertNotIn("retract_length", printer)
+            self.assertNotIn("start_gcode", printer)
+            for alias in ("Vase Hollow", "Vase Bottom", "Infill"):
+                section = f"print:{alias} @Potterbot {nozzle}mm"
+                self.assertIn(section, self.ini)
+                cond = self.ini[section]["compatible_printers_condition"]
+                self.assertIn("PRINTER_VENDOR_POTTERBOT", cond)
+                self.assertIn(f"nozzle_diameter[0]=={nozzle}", cond)
+                self.assertNotIn("CLAY_TRAVEL", cond)
+                self.assertEqual(self.ini[section]["alias"], alias)
             hollow = self.ini[f"print:Vase Hollow @Potterbot {nozzle}mm"]
             bottom = self.ini[f"print:Vase Bottom @Potterbot {nozzle}mm"]
+            infill = self.ini[f"print:Infill @Potterbot {nozzle}mm"]
             self.assertEqual(hollow["bottom_solid_layers"], "0")
             self.assertEqual(bottom["bottom_solid_layers"], "3")
             self.assertEqual(hollow.get("spiral_vase") or common["spiral_vase"], "1")
+            self.assertEqual(bottom.get("spiral_vase") or common["spiral_vase"], "1")
+            self.assertEqual(infill["spiral_vase"], "0")
             expected_layer = str(int(layer)) if layer.is_integer() else f"{layer:g}"
             self.assertEqual(hollow.get("layer_height") or common["layer_height"], expected_layer)
             self.assertEqual(hollow["extrusion_width"], str(nozzle))
@@ -95,14 +150,6 @@ class VendorStructureTests(unittest.TestCase):
                 self.assertEqual(hollow["first_layer_height"], "0.8")
             else:
                 self.assertNotIn("layer_height", hollow)
-            self.assertIn(f"nozzle_diameter[0]=={nozzle}", hollow["compatible_printers_condition"])
-            self.assertIn("CLAY_TRAVEL_OPEN", hollow["compatible_printers_condition"])
-            infill = self.ini[f"print:Infill @Potterbot {nozzle}mm"]
-            self.assertIn("CLAY_TRAVEL_RETRACT", infill["compatible_printers_condition"])
-            self.assertIn("CLAY_TRAVEL_OPEN", printer["printer_notes"])
-            retract_printer = self.ini[f"printer:{nozzle}mm Nozzle Retract"]
-            self.assertIn("CLAY_TRAVEL_RETRACT", retract_printer["printer_notes"])
-            self.assertNotIn("CLAY_TRAVEL_OPEN", retract_printer["printer_notes"])
 
     def test_official_cura_speeds_and_shell(self) -> None:
         p = self.ini["print:*common*"]
@@ -130,7 +177,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(five.get("layer_height") or p["layer_height"], "1.5")
         self.assertEqual(five["extrusion_width"], "5")
 
-    def test_vase_unretracted_infill_uses_retract_printer(self) -> None:
+    def test_infill_profile(self) -> None:
         infill = self.ini["print:Infill @Potterbot 5mm"]
         self.assertEqual(infill["spiral_vase"], "0")
         self.assertEqual(infill["fill_density"], "15%")
@@ -138,41 +185,65 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(infill["bottom_solid_layers"], "3")
         self.assertEqual(infill["top_solid_layers"], "3")
         self.assertEqual(infill["avoid_crossing_perimeters"], "1")
-        vase = self.ini["printer:5mm Nozzle"]
-        retract = self.ini["printer:5mm Nozzle Retract"]
-        common = self.ini["printer:*common*"]
-        self.assertEqual(vase.get("retract_length") or common["retract_length"], "0")
-        self.assertEqual(vase.get("retract_lift") or common["retract_lift"], "0")
-        self.assertEqual(retract["retract_length"], "80")
-        self.assertEqual(retract["retract_lift"], "5")
-        self.assertEqual(retract["retract_lift_above"], "1.6")
-        self.assertEqual(self.ini["printer:1mm Nozzle Retract"]["retract_lift_above"], "0.9")
-        self.assertEqual(retract["retract_speed"], "80")
-        self.assertEqual(retract["deretract_speed"], "80")
-        self.assertEqual(retract.get("retract_restart_extra") or common["retract_restart_extra"], "0")
-        self.assertLess(float(retract["retract_speed"]), 85)
-        self.assertNotEqual(retract["retract_speed"], "1000")
-        self.assertNotEqual(retract["retract_length"], "1000")
-        self.assertNotIn("filament:Clay Potterbot Retract", self.ini)
-        vase_start = (vase.get("start_gcode") or common["start_gcode"]).replace("\\n", "\n")
-        retract_start = retract["start_gcode"].replace("\\n", "\n")
-        self.assertNotIn("E-80", vase_start)
-        self.assertNotIn("E-80", retract_start)
-        self.assertNotIn("G1 Z10 F1000", vase_start)
-        self.assertIn("G28 ;Home all", retract_start)
-        self.assertIn("G1 Z10 F1000", retract_start)
-        self.assertLess(retract_start.index("G28 ;Home all"), retract_start.index("G1 Z10 F1000"))
-        self.assertIn("CLAY_TRAVEL_OPEN", vase["printer_notes"])
-        self.assertIn("CLAY_TRAVEL_RETRACT", infill["compatible_printers_condition"])
+        self.assertIn(CLAY_RETRACT, infill["notes"])
+        self.assertNotIn("Retract printer", infill["notes"])
 
-    def test_clay_filament_is_cold(self) -> None:
-        f = self.ini["filament:Clay Potterbot"]
-        self.assertEqual(f["temperature"], "0")
-        self.assertEqual(f["first_layer_temperature"], "0")
-        self.assertEqual(f["bed_temperature"], "0")
-        self.assertEqual(f["max_fan_speed"] if "max_fan_speed" in f else self.ini["filament:*common*"].get("max_fan_speed", "0"), "0")
-        diameter = f.get("filament_diameter") or self.ini["filament:*common*"]["filament_diameter"]
-        self.assertEqual(diameter, "1.75")
+    def test_two_clay_filaments(self) -> None:
+        filaments = [s for s in self.ini.sections() if s.startswith("filament:") and s != "filament:*common*"]
+        self.assertEqual(filaments, [f"filament:{CLAY}", f"filament:{CLAY_RETRACT}"])
+        common = self.ini["filament:*common*"]
+        self.assertEqual(common["temperature"], "0")
+        self.assertEqual(common["first_layer_temperature"], "0")
+        self.assertEqual(common["bed_temperature"], "0")
+        self.assertEqual(common["first_layer_bed_temperature"], "0")
+        self.assertEqual(common["max_fan_speed"], "0")
+        self.assertEqual(common["cooling"], "0")
+        self.assertEqual(common["filament_diameter"], "1.75")
+        self.assertIn("PRINTER_VENDOR_POTTERBOT", common["compatible_printers_condition"])
+
+        clay = self.ini[f"filament:{CLAY}"]
+        self.assertEqual(clay["inherits"], "*common*")
+        # Unretracted clay is only offered with the spiral-vase print profiles.
+        self.assertEqual(clay["compatible_prints_condition"], "spiral_vase==1")
+        for key in ("filament_retract_length", "filament_retract_lift"):
+            self.assertNotIn(key, clay)
+        clay_start = clay.get("start_filament_gcode") or common["start_filament_gcode"]
+        self.assertNotIn("G1 Z10", clay_start)
+
+        retract = self.ini[f"filament:{CLAY_RETRACT}"]
+        self.assertEqual(retract["inherits"], "*common*")
+        self.assertNotIn("compatible_prints_condition", retract)
+        self.assertEqual(retract["filament_retract_length"], "80")
+        self.assertEqual(retract["filament_retract_lift"], "5")
+        self.assertNotEqual(retract["filament_retract_length"], "1000")
+        for key in ("filament_retract_speed", "filament_deretract_speed", "filament_retract_lift_above"):
+            self.assertNotIn(key, retract)  # printer values (80 mm/s, per-nozzle threshold) apply
+        retract_start = retract["start_filament_gcode"].replace("\\n", "\n")
+        self.assertIn("G1 Z10 F1000", retract_start)
+        self.assertNotIn("G28", retract_start)
+        self.assertNotIn("E-", retract_start)
+        self.assertNotIn("filament:Clay Potterbot Retract Retract", self.ini)
+
+    def test_vendor_assets(self) -> None:
+        for name in ("POTTERBOT9_bed.stl", "POTTERBOT9_texture.svg", "POTTERBOT9_thumbnail.png"):
+            self.assertTrue((ASSETS / name).is_file(), name)
+        count, (x0, x1), (y0, y1), (z0, z1) = stl_bounds(ASSETS / "POTTERBOT9_bed.stl")
+        self.assertGreater(count, 0)
+        # 381 mm bat centred on the 381 x 360 bed_shape in X, starting at Y0 (21 mm overhang at the back).
+        self.assertAlmostEqual(x0, -190.5, places=2)
+        self.assertAlmostEqual(x1, 190.5, places=2)
+        self.assertAlmostEqual(y0, -180.0, places=2)
+        self.assertAlmostEqual(y1, 201.0, places=2)
+        self.assertAlmostEqual(z1, 0.0, places=2)
+        self.assertAlmostEqual(z0, -6.35, places=2)
+        svg = (ASSETS / "POTTERBOT9_texture.svg").read_text(encoding="utf-8")
+        self.assertIn('viewBox="0 0 381 360"', svg)
+        self.assertNotIn("<text", svg)  # nanosvg does not render text
+        self.assertNotIn("<pattern", svg)
+        png = (ASSETS / "POTTERBOT9_thumbnail.png").read_bytes()
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+        width, height = struct.unpack(">II", png[16:24])
+        self.assertEqual((width, height), (180, 256))
 
     def test_post_process_validator(self) -> None:
         post = self.ini["print:*common*"]["post_process"]
