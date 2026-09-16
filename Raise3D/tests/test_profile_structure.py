@@ -48,8 +48,8 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertIn("vendor", self.ini)
         self.assertEqual(self.ini["vendor"]["name"], "Raise3D (experimental)")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.49")
-        self.assertIn("0.5.49 ", IDX.read_text(encoding="utf-8"))
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.50")
+        self.assertIn("0.5.50 ", IDX.read_text(encoding="utf-8"))
         self.assertNotIn("printer_model:PRO2PLUS_HS", self.ini)
         self.assertIn("printer_model:PRO2PLUS_HS_DUAL", self.ini)
         self.assertNotIn("printer:Raise3D Pro2 Plus Hyper Speed 0.4 Left", self.ini)
@@ -116,6 +116,8 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(p["nozzle_diameter"], "0.4,0.4")
         self.assertEqual(p["extruder_offset"], "0x0,0x0")
         self.assertIn("PRINTER_VARIANT_DUAL", p["printer_notes"])
+        # Templates.ini checks printer_notes!~/.*NO_TEMPLATES.*/; keeps Generic PLA etc. out of the filament list.
+        self.assertIn("\\nNO_TEMPLATES\\n", p["printer_notes"])
         start = p["start_gcode"]
         self.assertIn(";Firmware: Klipper", start)
         self.assertIn('{if filament_type[0]=="PLA"}M221 T0 S94', start)

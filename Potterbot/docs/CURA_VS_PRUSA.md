@@ -131,7 +131,7 @@ After `G28`, `homeall.g` leaves the head at **X max, Y min, Z max** = **X420 Y0 
 | Y | 360 | 360 | 360 (bat is 381; Y travel is the limit) |
 | Z | 400 | 400 | 400 |
 
-Origin is firmware bed corner **X0 Y0**, same as Cura’s custom machine. Operator macro `PRINT START LOCATION.gcode` jogs to **X210 Y180 Z0** (center of **firmware** 420 × 360, not the 381 bat). That macro is not in either slicer’s start G-code.
+Origin is firmware bed corner **X0 Y0**, same as Cura’s custom machine. Cura’s bed is a plain rectangle; the Prusa `bed_shape` is a polygon with the bat’s 12.7 mm front-corner radius (0.1.18), so a part cannot be dropped onto the two front corners that do not exist on the bat. Operator macro `PRINT START LOCATION.gcode` jogs to **X210 Y180 Z0** (center of **firmware** 420 × 360, not the 381 bat). That macro is not in either slicer’s start G-code.
 
 `validate_gcode.py` **rejects X > 381**. Cura will happily slice to X 420. That is a lab safety choice, not a Cura match. Jobs on the bat (CFFFP max X 313, official vases max X 329) pass both.
 

@@ -20,7 +20,7 @@ Retraction is a **filament** choice (PrusaSlicer keeps retraction on the printer
 
 The printer notes carry `NO_TEMPLATES`, so PrusaSlicer's generic Template filaments (Generic PLA and friends) are hidden for this machine and only the two clays are offered.
 
-The plater is the **15×15″ bat** clipped to Y travel: **381 × 360 × 400 mm**. Firmware travel is 420 × 360 × 400; X past 381 is unused so the model stays on the bat. `vendor/Potterbot/` holds the plater and wizard assets: `POTTERBOT9_bed.stl` (the 381 × 381 × 6.35 mm bat with rounded corners, overhanging the 360 mm printable Y by 21 mm at the back), `POTTERBOT9_texture.svg` (white textured surface with a faint 10 / 50 mm grid), and `POTTERBOT9_thumbnail.png` (180 × 256 Configuration Wizard image). PrusaSlicer only draws the vendor plate when both the STL and the SVG are present.
+The plater is the **15×15″ bat** clipped to Y travel: **381 × 360 × 400 mm**, with the two **front corners rounded 12.7 mm** in `bed_shape` like the bat itself (the back edge is straight because the bat continues 21 mm past Y travel). Firmware travel is 420 × 360 × 400; X past 381 is unused so the model stays on the bat. `vendor/Potterbot/` holds the plater and wizard assets: `POTTERBOT9_bed.stl` (the 381 × 381 × 6.35 mm bat with rounded corners, overhanging the 360 mm printable Y by 21 mm at the back; PrusaSlicer draws that unreachable strip in its fixed dark grey), `POTTERBOT9_texture.svg` (grey textured surface with a 10 / 50 mm grid, clipped by PrusaSlicer to the rounded `bed_shape`), and `POTTERBOT9_thumbnail.png` (180 × 256 Configuration Wizard image). PrusaSlicer only draws the vendor plate when both the STL and the SVG are present.
 
 ## Install
 
@@ -67,6 +67,7 @@ C:\Repos\Prusa-Slicer-Print-Profiles\Potterbot\scripts\validate_gcode.py
 - The bat in the plater is drawn from a measured 15 × 15 × ¼ in with 12.7 mm corner radii, starting at X0 Y0. The drawing is cosmetic; `bed_shape` (381 × 360) is what PrusaSlicer and `validate_gcode.py` enforce.
 - Official docs only publish 1.5 mm layer height (Fine / 3D Potter Standard). That value is used on 2–10 mm nozzles. The 1 mm tip is **0.8 mm** so line width stays above layer height. Line width still follows the installed tip. Tune layer height per clay if 1.5 mm is wrong for a large nozzle.
 - Bat origin is X0 Y0 (firmware bed edge). If the bat is shifted on the table, jog and re-zero before trusting the plater.
+- `bed_shape` is a polygon (rounded front corners), so Printer Settings → Bed shape shows **Custom** rather than Rectangular. Its bounding box is still 381 × 360; `validate_gcode.py` keeps checking that rectangle.
 - `pause.g` on the board homes the machine. Slicer pause emits `M25` instead. Do not copy `pause.g` into the profile.
 
 ## Before you print

@@ -1,8 +1,9 @@
-"""Checks the Potterbot vendor bundle structure."""
+﻿"""Checks the Potterbot vendor bundle structure."""
 
 from __future__ import annotations
 
 import configparser
+import math
 import struct
 import unittest
 from pathlib import Path
@@ -51,12 +52,12 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertTrue(BUNDLE.is_file())
         self.assertEqual(VENDOR.read_text(encoding="utf-8"), BUNDLE.read_text(encoding="utf-8"))
-        self.assertIn("0.1.17 ", IDX.read_text(encoding="utf-8"))
+        self.assertIn("0.1.18 ", IDX.read_text(encoding="utf-8"))
 
     def test_single_printer_model(self) -> None:
         self.assertEqual(self.ini["vendor"]["name"], "3D Potter (experimental)")
         self.assertEqual(self.ini["vendor"]["repo_id"], "non-prusa-fff")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.17")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.18")
         model = self.ini["printer_model:POTTERBOT9"]
         self.assertEqual(model["variants"], "1;2;3;4;5;6;7;8;9;10")
         self.assertEqual(model["default_materials"], f"{CLAY};{CLAY_RETRACT}")
@@ -92,11 +93,34 @@ class VendorStructureTests(unittest.TestCase):
         self.assertIn("G0 Z10 E-500 F1000", end)
         self.assertIn("G28 ;Home all", end)
 
-    def test_bed_is_bat_clipped_to_y_travel(self) -> None:
+    def test_bed_is_bat_clipped_to_y_travel_with_rounded_front(self) -> None:
         p = self.ini["printer:5mm Nozzle"]
-        self.assertEqual(p["bed_shape"], "0x0,381x0,381x360,0x360")
+        points = [tuple(float(v) for v in pt.split("x")) for pt in p["bed_shape"].split(",")]
+        xs = [x for x, _ in points]
+        ys = [y for _, y in points]
+        # Bounding box is still the 381 x 360 clip of the bat.
+        self.assertEqual((min(xs), max(xs)), (0.0, 381.0))
+        self.assertEqual((min(ys), max(ys)), (0.0, 360.0))
+        # Back corners are square (bat continues past Y travel)...
+        self.assertIn((381.0, 360.0), points)
+        self.assertIn((0.0, 360.0), points)
+        # ...front corners are rounded 12.7 mm like the bat.
+        self.assertNotIn((0.0, 0.0), points)
+        self.assertNotIn((381.0, 0.0), points)
+        self.assertIn((12.7, 0.0), points)
+        self.assertIn((381.0, 12.7), points)
+        self.assertIn((0.0, 12.7), points)
+        for x, y in points:
+            if x < 12.7 and y < 12.7:
+                self.assertAlmostEqual(math.hypot(x - 12.7, y - 12.7), 12.7, places=2)
+            if x > 381 - 12.7 and y < 12.7:
+                self.assertAlmostEqual(math.hypot(x - (381 - 12.7), y - 12.7), 12.7, places=2)
+        self.assertGreater(len(points), 20)
         self.assertEqual(p["max_print_height"], "400")
         self.assertEqual(p["nozzle_diameter"], "5")
+        # Same polygon on every nozzle variant.
+        for nozzle in range(1, 11):
+            self.assertEqual(self.ini[f"printer:{nozzle}mm Nozzle"]["bed_shape"], p["bed_shape"])
 
     def test_ten_nozzle_printers_three_prints_each(self) -> None:
         common = self.ini["print:*common*"]

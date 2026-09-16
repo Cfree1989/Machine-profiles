@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,12 +10,17 @@ VENDOR = ROOT / "vendor" / "Potterbot.ini"
 BUNDLE = ROOT / "profiles" / "Potterbot-9-bundle.ini"
 IDX = ROOT / "vendor" / "Potterbot.idx"
 
-CONFIG_VERSION = "0.1.17"
+CONFIG_VERSION = "0.1.18"
 MODEL_ID = "POTTERBOT9"
 NOZZLES = list(range(1, 11))
 BED_X = 381  # 15 in bat; firmware X travel is 420
 BED_Y = 360  # firmware Y travel (bat is 381)
 BED_Z = 400
+# The bat's corners are rounded. bed_shape follows the two front corners so the
+# plater (and the printable area) stop where the bat does; the back edge is
+# straight because the bat continues 21 mm past Y travel.
+BAT_CORNER_RADIUS = 12.7
+BED_CORNER_SEGMENTS = 12
 LAYER_HEIGHT = 1.5  # official Cura 3D Potter Standard / Fine
 PRINT_SPEED = 40
 TRAVEL_SPEED = 80
@@ -63,6 +69,34 @@ def fmt_num(value: float) -> str:
     if float(value).is_integer():
         return str(int(value))
     return f"{value:g}"
+
+
+def bed_shape_points() -> list[tuple[float, float]]:
+    """Counter-clockwise bed outline: 381 x 360 with the two front corners rounded."""
+    r = BAT_CORNER_RADIUS
+    n = BED_CORNER_SEGMENTS
+    pts: list[tuple[float, float]] = []
+    # Front-right corner, centre (BED_X - r, r), -90 deg -> 0 deg.
+    for i in range(n + 1):
+        a = math.radians(-90.0 + 90.0 * i / n)
+        pts.append((BED_X - r + r * math.cos(a), r + r * math.sin(a)))
+    pts.append((float(BED_X), float(BED_Y)))
+    pts.append((0.0, float(BED_Y)))
+    # Front-left corner, centre (r, r), 180 deg -> 270 deg, ending at (r, 0);
+    # the front edge then closes back to (BED_X - r, 0).
+    for i in range(n + 1):
+        a = math.radians(180.0 + 90.0 * i / n)
+        pts.append((r + r * math.cos(a), r + r * math.sin(a)))
+    cleaned: list[tuple[float, float]] = []
+    for x, y in pts:
+        x = round(x, 3)
+        y = round(y, 3)
+        cleaned.append((x if x != 0 else 0.0, y if y != 0 else 0.0))
+    return cleaned
+
+
+def bed_shape() -> str:
+    return ",".join(f"{x:g}x{y:g}" for x, y in bed_shape_points())
 
 
 def start_gcode() -> str:
@@ -132,7 +166,8 @@ def printer_notes(nozzle: int) -> str:
         f"{fmt_num(retract_lift_above_for(nozzle))} mm (not the FAQ 1000 mm/s) and drops to Z{RETRACT_DROP_Z} after G28. "
         "NO_TEMPLATES hides PrusaSlicer Template filaments for this printer. "
         "Match line width to the nozzle on the machine. "
-        "Bed is the 15x15 in bat (381 mm) clipped to Y 360. After G28 the head is at X420 Y0 Z400."
+        "Bed is the 15x15 in bat (381 mm) clipped to Y 360, with the two front corners rounded 12.7 mm like the bat. "
+        "After G28 the head is at X420 Y0 Z400."
     )
 
 
@@ -218,7 +253,7 @@ def vendor_block() -> str:
         "",
     ]
 
-    bed = f"0x0,{BED_X}x0,{BED_X}x{BED_Y},0x{BED_Y}"
+    bed = bed_shape()
     for nozzle in NOZZLES:
         name = f"{nozzle}mm Nozzle"
         max_layer = fmt_num(max(layer_for_nozzle(nozzle), float(nozzle)))
@@ -484,10 +519,12 @@ def idx_text() -> str:
         "start drops to Z10. Infill profiles require the Retract printer.\n"
         "0.1.16 Retract printers hop only after layer 0 "
         "(retract_lift_above = first layer + 0.1 mm) so the skirt unretracts at layer height.\n"
-        f"{CONFIG_VERSION} One printer model again (1-10 mm Nozzle); the Retract printers are gone. "
+        "0.1.17 One printer model again (1-10 mm Nozzle); the Retract printers are gone. "
         "Retraction is a filament choice: Clay Potterbot (off, vase profiles only) or "
         "Clay Potterbot Retract (80 mm at 80 mm/s, 5 mm hop after layer 0, start drops to Z10). "
         "NO_TEMPLATES hides Template filaments. Wizard thumbnail, bed model and bat texture in vendor/Potterbot.\n"
+        f"{CONFIG_VERSION} bed_shape follows the bat's rounded front corners (12.7 mm) so the plater shows the real outline. "
+        "Bat texture is darker grey with a visible 10 / 50 mm grid.\n"
     )
 
 
