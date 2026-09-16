@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import configparser
 import struct
+import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
 VENDOR = ROOT / "vendor" / "Raise3D.ini"
 IDX = ROOT / "vendor" / "Raise3D.idx"
 BUNDLE = ROOT / "profiles" / "Raise3D-Pro2Plus-HS-0.4-bundle.ini"
 ASSETS = ROOT / "vendor" / "Raise3D"
+
+import generate_assets as assets  # noqa: E402
 
 
 def stl_bounds(path: Path) -> tuple[int, tuple[float, float], tuple[float, float], tuple[float, float]]:
@@ -48,8 +52,8 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertIn("vendor", self.ini)
         self.assertEqual(self.ini["vendor"]["name"], "Raise3D (experimental)")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.50")
-        self.assertIn("0.5.50 ", IDX.read_text(encoding="utf-8"))
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.5.51")
+        self.assertIn("0.5.51 ", IDX.read_text(encoding="utf-8"))
         self.assertNotIn("printer_model:PRO2PLUS_HS", self.ini)
         self.assertIn("printer_model:PRO2PLUS_HS_DUAL", self.ini)
         self.assertNotIn("printer:Raise3D Pro2 Plus Hyper Speed 0.4 Left", self.ini)
@@ -65,13 +69,13 @@ class VendorStructureTests(unittest.TestCase):
             self.assertTrue((ASSETS / name).is_file(), name)
         count, (x0, x1), (y0, y1), (z0, z1) = stl_bounds(ASSETS / model["bed_model"])
         self.assertGreater(count, 0)
-        # 330 x 340 x 3/16 in plate centred on the 305 x 305 bed_shape, top at Z 0.
-        self.assertAlmostEqual(x0, -165.0, places=2)
-        self.assertAlmostEqual(x1, 165.0, places=2)
-        self.assertAlmostEqual(y0, -170.0, places=2)
-        self.assertAlmostEqual(y1, 170.0, places=2)
+        # 13.375 x 13 in plate centred on 305 x 305, handle hanging off the front.
+        self.assertAlmostEqual(x0, -assets.PLATE_X / 2, places=2)
+        self.assertAlmostEqual(x1, assets.PLATE_X / 2, places=2)
+        self.assertAlmostEqual(y1, assets.PLATE_Y / 2, places=2)
+        self.assertAlmostEqual(y0, -assets.PLATE_Y / 2 - max(assets.HANDLE_DEPTH, assets.TAB_DEPTH), places=2)
         self.assertAlmostEqual(z1, 0.0, places=2)
-        self.assertAlmostEqual(z0, -4.76, places=2)
+        self.assertAlmostEqual(z0, -assets.PLATE_THICKNESS, places=2)
         svg = (ASSETS / model["bed_texture"]).read_text(encoding="utf-8")
         self.assertIn('viewBox="0 0 305 305"', svg)
         self.assertNotIn("<text", svg)  # nanosvg does not render text

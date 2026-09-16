@@ -1,15 +1,17 @@
 """Generate the Raise3D vendor-folder assets PrusaSlicer draws on the plater.
 
-Writes vendor/Raise3D/PRO2PLUS_HS_DUAL_bed.stl (the 330 x 340 mm build plate)
-and vendor/Raise3D/PRO2PLUS_HS_DUAL_texture.svg (BuildTak surface with the T1
-keep-out band).
+Writes vendor/Raise3D/PRO2PLUS_HS_DUAL_bed.stl (the measured 13.375 x 13 in
+plate plus the front clip-on handle) and vendor/Raise3D/PRO2PLUS_HS_DUAL_texture.svg
+(BuildTak surface with the T1 keep-out band). The SVG is stretched over
+bed_shape only, so leave plate_svg() alone unless the printable texture
+should change.
 
 PrusaSlicer 2.9.6 only draws a vendor bed when BOTH bed_model and bed_texture
 resolve (Bed3D::detect_type), so both files are required. The STL origin is
 placed at the centre of bed_shape with Z 0 at the plate top, and the texture is
 stretched over the bed_shape rectangle (image top = back of the bed).
 nanosvg does not render <text>, so the keep-out band is hatched instead of
-labelled.
+labelled. Geometry in front of bed_shape (the handle) is the untextured STL.
 
 Standard library only. The wizard thumbnail (PRO2PLUS_HS_DUAL_thumbnail.png) is
 a one-off image crop; see tools/make_thumbnail.ps1.
@@ -31,13 +33,25 @@ BED_SVG = ASSET_DIR / "PRO2PLUS_HS_DUAL_texture.svg"
 BED_X = 305.0
 BED_Y = 305.0
 
-# Physical plate: 330 x 340 mm, ~3/16 in thick, rounded corners, assumed
-# centred on the printable area (12.5 mm each side in X, 17.5 mm front/back).
-PLATE_X = 330.0
-PLATE_Y = 340.0
-PLATE_THICKNESS = 4.7625
+# Physical black plate, tape-measured on this machine, centred on bed_shape.
+# X is the longer side; Y is front-to-back of the BuildTak sheet (handle extra).
+INCH = 25.4
+PLATE_X = 13.375 * INCH  # 339.725 mm
+PLATE_Y = 13.0 * INCH  # 330.2 mm
+PLATE_THICKNESS = 4.7625  # ~3/16 in
 PLATE_CORNER_RADIUS = 6.0
 CORNER_SEGMENTS = 8
+
+# Front clip-on handle (photos). Depth/width are not tape-measured; PrusaSlicer
+# cannot paint them red — bed_texture only covers the 305 x 305 printable rectangle.
+HANDLE_WIDTH = 270.0
+HANDLE_DEPTH = 25.0
+HANDLE_CORNER_RADIUS = 4.0
+HANDLE_TUCK = 2.0
+TAB_INSET = 6.0
+TAB_DEPTH = 26.0
+TAB_FRONT_TAPER = 12.0
+TAB_TUCK = 8.0
 
 # T1 (right nozzle) cannot reach the leftmost ~25 mm (firmware X offset).
 T1_KEEPOUT_X = 25.0
@@ -112,10 +126,55 @@ def write_binary_stl(path: Path, tris: list[tuple[tuple[float, float, float], ..
 
 
 def plate_stl_triangles() -> list[tuple[tuple[float, float, float], ...]]:
-    # PrusaSlicer puts the STL origin at the bed_shape centre; the plate is
-    # centred there, so model coordinates run X -165..165, Y -170..170.
-    outline = rounded_rect(-PLATE_X / 2, -PLATE_Y / 2, PLATE_X / 2, PLATE_Y / 2, PLATE_CORNER_RADIUS, CORNER_SEGMENTS)
-    return prism_triangles(outline, -PLATE_THICKNESS, 0.0)
+    # PrusaSlicer puts the STL origin at the bed_shape centre. +Y is the back of
+    # the printer, so the handle hangs off min Y (front).
+    x0, x1 = -PLATE_X / 2, PLATE_X / 2
+    y0, y1 = -PLATE_Y / 2, PLATE_Y / 2
+    tris = prism_triangles(
+        rounded_rect(x0, y0, x1, y1, PLATE_CORNER_RADIUS, CORNER_SEGMENTS),
+        -PLATE_THICKNESS,
+        0.0,
+    )
+    hx0, hx1 = -HANDLE_WIDTH / 2, HANDLE_WIDTH / 2
+    hy0, hy1 = y0 - HANDLE_DEPTH, y0 + HANDLE_TUCK
+    tris.extend(
+        prism_triangles(
+            rounded_rect(hx0, hy0, hx1, hy1, HANDLE_CORNER_RADIUS, CORNER_SEGMENTS),
+            -PLATE_THICKNESS,
+            0.0,
+        )
+    )
+    tab_y0, tab_y1 = y0 - TAB_DEPTH, y0 + TAB_TUCK
+    # Left then right clip: wide against the plate, taper toward the front.
+    left_outer_back = x0 + TAB_INSET
+    left_outer_front = left_outer_back + TAB_FRONT_TAPER
+    right_outer_back = x1 - TAB_INSET
+    right_outer_front = right_outer_back - TAB_FRONT_TAPER
+    tris.extend(
+        prism_triangles(
+            [
+                (hx0, tab_y0),
+                (hx0, tab_y1),
+                (left_outer_back, tab_y1),
+                (left_outer_front, tab_y0),
+            ],
+            -PLATE_THICKNESS,
+            0.0,
+        )
+    )
+    tris.extend(
+        prism_triangles(
+            [
+                (right_outer_front, tab_y0),
+                (right_outer_back, tab_y1),
+                (hx1, tab_y1),
+                (hx1, tab_y0),
+            ],
+            -PLATE_THICKNESS,
+            0.0,
+        )
+    )
+    return tris
 
 
 def hexagon_points(cx: float, cy: float, r: float) -> str:
@@ -202,7 +261,11 @@ def plate_svg() -> str:
 
 def main() -> None:
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
-    write_binary_stl(BED_STL, plate_stl_triangles(), "Raise3D Pro2 Plus plate 330x340x4.76 mm, origin at bed_shape centre")
+    write_binary_stl(
+        BED_STL,
+        plate_stl_triangles(),
+        "Raise3D Pro2 Plus 13.375x13 in plate + handle, origin bed centre",
+    )
     BED_SVG.write_text(plate_svg(), encoding="utf-8", newline="\n")
     print(f"Wrote {BED_STL}")
     print(f"Wrote {BED_SVG}")
