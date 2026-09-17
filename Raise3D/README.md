@@ -83,7 +83,8 @@ The 2022 forum configs in `reference/community/extracted/` are **community start
 This profile’s Dual export for header diffs is `reference/prusaslicer/Raise3DTest_0.4n_0.2mm_PLA_PRO2PLUS_HS_DUAL_3h2m.gcode` — see `reference/README.md`.
 
 Command-by-command mapping: `docs/GCODE_MAPPING.md`  
-Evidence labels: `docs/MACHINE_BEHAVIOR.md`
+Evidence labels: `docs/MACHINE_BEHAVIOR.md`  
+Port review (open findings against 0.5.51, dual and sequential): `docs/PORT_REVIEW.md`
 
 ## Assumptions you must treat as untested
 
