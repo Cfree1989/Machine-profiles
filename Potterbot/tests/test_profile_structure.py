@@ -5,6 +5,7 @@ from __future__ import annotations
 import configparser
 import math
 import struct
+import sys
 import unittest
 from pathlib import Path
 
@@ -16,6 +17,9 @@ ASSETS = ROOT / "vendor" / "Potterbot"
 
 CLAY = "Clay Potterbot"
 CLAY_RETRACT = "Clay Potterbot Retract"
+
+sys.path.insert(0, str(ROOT / "scripts"))
+import generate_bundle as bundle  # noqa: E402
 
 
 def stl_bounds(path: Path) -> tuple[int, tuple[float, float], tuple[float, float], tuple[float, float]]:
@@ -52,12 +56,12 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertTrue(BUNDLE.is_file())
         self.assertEqual(VENDOR.read_text(encoding="utf-8"), BUNDLE.read_text(encoding="utf-8"))
-        self.assertIn("0.1.18 ", IDX.read_text(encoding="utf-8"))
+        self.assertIn("0.1.19 ", IDX.read_text(encoding="utf-8"))
 
     def test_single_printer_model(self) -> None:
         self.assertEqual(self.ini["vendor"]["name"], "3D Potter (experimental)")
         self.assertEqual(self.ini["vendor"]["repo_id"], "non-prusa-fff")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.18")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.19")
         model = self.ini["printer_model:POTTERBOT9"]
         self.assertEqual(model["variants"], "1;2;3;4;5;6;7;8;9;10")
         self.assertEqual(model["default_materials"], f"{CLAY};{CLAY_RETRACT}")
@@ -82,6 +86,8 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(common["retract_speed"], "80")
         self.assertEqual(common["deretract_speed"], "80")
         self.assertEqual(common["pause_print_gcode"], "M25")
+        self.assertEqual(common["extruder_clearance_height"], "400")
+        self.assertEqual(common["extruder_clearance_radius"], "40")
         self.assertEqual(common["default_filament_profile"], f'"{CLAY}"')
         start = common["start_gcode"].replace("\\n", "\n")
         end = common["end_gcode"].replace("\\n", "\n")
@@ -165,6 +171,10 @@ class VendorStructureTests(unittest.TestCase):
             expected_layer = str(int(layer)) if layer.is_integer() else f"{layer:g}"
             self.assertEqual(hollow.get("layer_height") or common["layer_height"], expected_layer)
             self.assertEqual(hollow["extrusion_width"], str(nozzle))
+            self.assertEqual(
+                hollow.get("bridge_flow_ratio") or common["bridge_flow_ratio"],
+                bundle.fmt_num(bundle.bridge_flow_ratio_for(nozzle)),
+            )
             self.assertGreater(
                 float(hollow["extrusion_width"]),
                 float(hollow.get("layer_height") or common["layer_height"]),
@@ -184,7 +194,8 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(p["fill_density"], "0%")
         self.assertEqual(p["fill_pattern"], "grid")
         self.assertEqual(p["bottom_fill_pattern"], "archimedeanchords")
-        self.assertEqual(p["top_fill_pattern"], "rectilinear")
+        self.assertEqual(p["top_fill_pattern"], "archimedeanchords")
+        self.assertEqual(p["complete_objects"], "1")
         self.assertEqual(p["perimeter_generator"], "arachne")
         self.assertEqual(p["infill_overlap"], "15%")
         self.assertEqual(p["top_solid_layers"], "0")
@@ -211,6 +222,8 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(infill["avoid_crossing_perimeters"], "1")
         self.assertIn(CLAY_RETRACT, infill["notes"])
         self.assertNotIn("Retract printer", infill["notes"])
+        self.assertNotIn("Sequential printing (complete objects) is off", infill["notes"])
+        self.assertIn("Sequential printing is on", infill["notes"])
 
     def test_two_clay_filaments(self) -> None:
         filaments = [s for s in self.ini.sections() if s.startswith("filament:") and s != "filament:*common*"]
@@ -222,6 +235,10 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(common["first_layer_bed_temperature"], "0")
         self.assertEqual(common["max_fan_speed"], "0")
         self.assertEqual(common["cooling"], "0")
+        self.assertEqual(common["min_fan_speed"], "0")
+        clay_common_start = common["start_filament_gcode"]
+        self.assertTrue(clay_common_start.startswith('"'), clay_common_start)
+        self.assertTrue(clay_common_start.endswith('"'), clay_common_start)
         self.assertEqual(common["filament_diameter"], "1.75")
         self.assertIn("PRINTER_VENDOR_POTTERBOT", common["compatible_printers_condition"])
 
@@ -242,7 +259,10 @@ class VendorStructureTests(unittest.TestCase):
         self.assertNotEqual(retract["filament_retract_length"], "1000")
         for key in ("filament_retract_speed", "filament_deretract_speed", "filament_retract_lift_above"):
             self.assertNotIn(key, retract)  # printer values (80 mm/s, per-nozzle threshold) apply
-        retract_start = retract["start_filament_gcode"].replace("\\n", "\n")
+        retract_start = retract["start_filament_gcode"]
+        self.assertTrue(retract_start.startswith('"'), retract_start)
+        self.assertTrue(retract_start.endswith('"'), retract_start)
+        retract_start = retract_start.replace("\\n", "\n")
         self.assertIn("G1 Z10 F1000", retract_start)
         self.assertNotIn("G28", retract_start)
         self.assertNotIn("E-", retract_start)
@@ -274,6 +294,15 @@ class VendorStructureTests(unittest.TestCase):
         self.assertIn("validate_gcode.py", post)
         self.assertIn("C:\\\\Windows\\\\py.exe -3", post)
         self.assertIn("C:\\\\Repos\\\\Prusa-Slicer-Print-Profiles\\\\Potterbot\\\\scripts\\\\", post)
+
+
+    def test_pause_macro_parks_without_homing(self) -> None:
+        pause = (ROOT / "reference" / "firmware" / "macros" / "pause.g").read_text(encoding="utf-8")
+        commands = [ln.split(";", 1)[0].strip() for ln in pause.splitlines() if ln.split(";", 1)[0].strip()]
+        self.assertFalse(any(cmd.upper().startswith("G28") for cmd in commands), pause)
+        self.assertIn("G91", pause)
+        self.assertIn("G1 Z10 F1000", pause)
+        self.assertIn("G1 X420 Y0 F4800", pause)
 
 
 if __name__ == "__main__":

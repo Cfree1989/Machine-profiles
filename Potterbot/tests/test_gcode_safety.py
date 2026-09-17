@@ -28,6 +28,17 @@ class GcodeSafetyTests(unittest.TestCase):
             validate((FIXTURES / "no_retract_rejected.gcode").read_text(encoding="utf-8"))
         self.assertIn("E-500", str(ctx.exception))
 
+    def test_retract_at_z400_is_rejected(self) -> None:
+        with self.assertRaises(ValidationError) as ctx:
+            validate((FIXTURES / "retract_at_z400_rejected.gcode").read_text(encoding="utf-8"))
+        self.assertIn("Z400", str(ctx.exception))
+
+    def test_end_push_e500_is_not_a_retract(self) -> None:
+        text = (FIXTURES / "good_vase.gcode").read_text(encoding="utf-8").replace("E-500", "E500")
+        with self.assertRaises(ValidationError) as ctx:
+            validate(text)
+        self.assertIn("E-500", str(ctx.exception))
+
     def test_official_cura_end_retract_present(self) -> None:
         sample = (ROOT / "reference" / "cura" / "no_bottom__layers.gcode").read_text(
             encoding="utf-8", errors="replace"

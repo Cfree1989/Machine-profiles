@@ -10,7 +10,7 @@ VENDOR = ROOT / "vendor" / "Potterbot.ini"
 BUNDLE = ROOT / "profiles" / "Potterbot-9-bundle.ini"
 IDX = ROOT / "vendor" / "Potterbot.idx"
 
-CONFIG_VERSION = "0.1.18"
+CONFIG_VERSION = "0.1.19"
 MODEL_ID = "POTTERBOT9"
 NOZZLES = list(range(1, 11))
 BED_X = 381  # 15 in bat; firmware X travel is 420
@@ -56,13 +56,19 @@ HEADER = """\
 # Speeds and start/end from official Cura 3D Potter Standard + Cura 5.12 jobs.
 # Bed is the 15x15 in bat clipped to Y travel (381 x 360 x 400). Firmware travel is 420 x 360 x 400.
 # One printer per nozzle. Retraction is a filament choice: Clay Potterbot (off) or Clay Potterbot Retract (80 mm).
-# Do not copy pause.g into the slicer (it homes).
+# Sequential printing is on (complete objects). Copy reference/firmware/macros/pause.g to the Duet (park, not home).
 
 """
 
 
 def nln(text: str) -> str:
     return text.replace("\n", "\\n")
+
+
+def quoted_filament_gcode(body: str) -> str:
+    # PrusaSlicer stores start_filament_gcode as a per-extruder string vector and
+    # splits unquoted values on ';'. Quotes keep the comment and the G1 Z10 drop.
+    return '"' + nln(body) + '"'
 
 
 def fmt_num(value: float) -> str:
@@ -115,10 +121,34 @@ def start_gcode() -> str:
 def retract_filament_start_gcode() -> str:
     # Emitted by PrusaSlicer right after start_gcode + preamble and before the
     # first travel, so the first slicer E- happens at Z10, not at Z400.
-    return nln(
+    return quoted_filament_gcode(
         f"; {CLAY_RETRACT}\n"
         f"G1 Z{RETRACT_DROP_Z} F1000 ;drop from Z400 before slicer retract"
     )
+
+
+def prusa_bead_area(nozzle: float, layer: float) -> float:
+    # PrusaSlicer rounded-rectangle: h * (w - h * (1 - pi/4)).
+    return layer * (nozzle - layer * (1.0 - math.pi / 4.0))
+
+
+def cura_bead_area(nozzle: float, layer: float) -> float:
+    # Cura rectangle: w * h. Lab jobs were tuned to this volume.
+    return nozzle * layer
+
+
+def cura_flow_multiplier(nozzle: float, layer: float) -> float:
+    return cura_bead_area(nozzle, layer) / prusa_bead_area(nozzle, layer)
+
+
+def bridge_flow_ratio_for(nozzle: int) -> float:
+    # Internal bridges are a round bead of diameter = nozzle. Scale that down to
+    # the same volume as a normal PrusaSlicer wall; post-process then raises
+    # every print E to Cura's rectangular volume.
+    w = float(nozzle)
+    h = layer_for_nozzle(nozzle)
+    round_area = math.pi * (w ** 2) / 4.0
+    return round(prusa_bead_area(w, h) / round_area, 3)
 
 
 def end_gcode() -> str:
@@ -201,7 +231,7 @@ def vendor_block() -> str:
         f"deretract_speed = {RETRACT_SPEED}",
         "extruder_colour = #C4A574",
         "extruder_offset = 0x0",
-        "extruder_clearance_height = 40",
+        "extruder_clearance_height = 400",
         "extruder_clearance_radius = 40",
         "gcode_flavor = reprapfirmware",
         "host_type = duet",
@@ -287,14 +317,14 @@ def vendor_block() -> str:
             "bottom_fill_pattern = archimedeanchords",
             "bottom_solid_min_thickness = 0",
             f"bridge_acceleration = {ACCEL_XY}",
-            "bridge_flow_ratio = 1",
+            f"bridge_flow_ratio = {fmt_num(bridge_flow_ratio_for(5))}",
             "bridge_speed = 40",
             "brim_separation = 0",
             "brim_width = 0",
             "clip_multipart_objects = 1",
             "compatible_printers_condition = printer_notes=~/.*PRINTER_VENDOR_POTTERBOT.*/ and printer_notes=~/.*PRINTER_MODEL_9.*/",
-            "complete_objects = 0",
-            "duplicate_distance = 12",
+            "complete_objects = 1",
+            "duplicate_distance = 80",
             f"default_acceleration = {ACCEL_XY}",
             "dont_support_bridges = 1",
             "elefant_foot_compensation = 0",
@@ -327,7 +357,7 @@ def vendor_block() -> str:
             "max_print_speed = 85",
             "max_volumetric_speed = 0",
             "min_skirt_length = 0",
-            f"notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms are Archimedean chords; tops are rectilinear; sparse infill is grid. 15% infill overlap so bottoms meet the wall. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). Retraction is chosen by filament: {CLAY} is unretracted (official Cura; vase profiles only), {CLAY_RETRACT} is {RETRACT_LENGTH} mm at {RETRACT_SPEED} mm/s with a {RETRACT_LIFT} mm hop after layer 0 and drops to Z{RETRACT_DROP_Z} after G28. Infill requires {CLAY_RETRACT}. End G-code lifts Z 10 mm and pulls E-500.",
+            f"notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms and visible tops are Archimedean chords; sparse infill is grid. 15% infill overlap so bottoms meet the wall. Sequential printing (complete objects) is on: add each pot as its own object and keep 40 mm radius clearance. Post-process matches Cura clay volume and holds full ram flow on the first spiral loop. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). No fan / no heaters (cooling off). Retraction is chosen by filament: {CLAY} is unretracted (official Cura; vase profiles only), {CLAY_RETRACT} is {RETRACT_LENGTH} mm at {RETRACT_SPEED} mm/s with a {RETRACT_LIFT} mm hop after layer 0 and drops to Z{RETRACT_DROP_Z} after G28. Infill requires {CLAY_RETRACT}. End G-code lifts Z 10 mm and pulls E-500.",
             f"layer_height = {fmt_num(LAYER_HEIGHT)}",
             f"first_layer_height = {fmt_num(LAYER_HEIGHT)}",
             "only_retract_when_crossing_perimeters = 1",
@@ -358,7 +388,7 @@ def vendor_block() -> str:
             "support_material_auto = 0",
             "thick_bridges = 0",
             "thin_walls = 0",
-            "top_fill_pattern = rectilinear",
+            "top_fill_pattern = archimedeanchords",
             f"top_solid_infill_acceleration = {ACCEL_XY}",
             f"top_solid_infill_speed = {BOTTOM_SPEED}",
             "top_solid_layers = 0",
@@ -398,7 +428,11 @@ def vendor_block() -> str:
             "printer_notes=~/.*PRINTER_MODEL_9.*/ and "
             f"nozzle_diameter[0]=={nozzle}"
         )
-        per_nozzle = [f"compatible_printers_condition = {cond}", *widths]
+        per_nozzle = [
+            f"compatible_printers_condition = {cond}",
+            *widths,
+            f"bridge_flow_ratio = {fmt_num(bridge_flow_ratio_for(nozzle))}",
+        ]
         hollow = f"Vase Hollow @Potterbot {nozzle}mm"
         bottom = f"Vase Bottom @Potterbot {nozzle}mm"
         infill = f"Infill @Potterbot {nozzle}mm"
@@ -426,7 +460,7 @@ def vendor_block() -> str:
                 "top_solid_layers = 3",
                 "avoid_crossing_perimeters = 1",
                 "infill_overlap = 15%",
-                f"notes = EXPERIMENTAL. Infill / multi-object clay. 15% grid infill, 3 Archimedean-chord bottoms, 3 rectilinear tops. Use the {CLAY_RETRACT} filament ({RETRACT_LENGTH} mm at {RETRACT_SPEED} mm/s, {RETRACT_LIFT} mm Z-hop after layer 0; its start G-code drops to Z{RETRACT_DROP_Z}). {CLAY} is not offered with this profile. Raise infill % on the plater if you need it. Sequential printing (complete objects) is off so a tall pot cannot hit the nozzle; turn it on only if objects are short and spaced.",
+                f"notes = EXPERIMENTAL. Infill / multi-object clay. 15% grid infill, 3 Archimedean-chord bottoms, 3 Archimedean-chord tops. Internal bridges use a reduced flow so the first solid over sparse infill is a normal bead, not a round nozzle-diameter blob. Use the {CLAY_RETRACT} filament ({RETRACT_LENGTH} mm at {RETRACT_SPEED} mm/s, {RETRACT_LIFT} mm Z-hop after layer 0; its start G-code drops to Z{RETRACT_DROP_Z}). {CLAY} is not offered with this profile. Raise infill % on the plater if you need it. Sequential printing is on; space objects by 40 mm radius (full 400 mm height is allowed).",
                 *per_nozzle,
                 "",
             ]
@@ -447,7 +481,7 @@ def vendor_block() -> str:
             "filament_vendor = 3D Potter",
             "min_print_speed = 10",
             "slowdown_below_layer_time = 5",
-            f"start_filament_gcode = ; {CLAY}",
+            f"start_filament_gcode = {quoted_filament_gcode('; ' + CLAY)}",
             "bed_temperature = 0",
             "bridge_fan_speed = 0",
             "disable_fan_first_layers = 1",
@@ -523,8 +557,14 @@ def idx_text() -> str:
         "Retraction is a filament choice: Clay Potterbot (off, vase profiles only) or "
         "Clay Potterbot Retract (80 mm at 80 mm/s, 5 mm hop after layer 0, start drops to Z10). "
         "NO_TEMPLATES hides Template filaments. Wizard thumbnail, bed model and bat texture in vendor/Potterbot.\n"
-        f"{CONFIG_VERSION} bed_shape follows the bat's rounded front corners (12.7 mm) so the plater shows the real outline. "
+        "0.1.18 bed_shape follows the bat's rounded front corners (12.7 mm) so the plater shows the real outline. "
         "Bat texture is darker grey with a visible 10 / 50 mm grid.\n"
+        f"{CONFIG_VERSION} Quote start_filament_gcode so Clay Potterbot Retract actually emits G1 Z10 after G28. "
+        "Post-process scales print E to Cura rectangular volume and holds full ram flow on the first spiral loop. "
+        "Infill internal-bridge flow matches a normal wall. Visible tops are Archimedean chords. "
+        "Sequential printing on (complete objects; clearance height 400 mm, radius 40 mm). "
+        "pause.g on the Duet must park (lift 10 mm, X420 Y0) not home; slicer pause still emits M25. "
+        "Cooling stays off (no fan, no heaters).\n"
     )
 
 

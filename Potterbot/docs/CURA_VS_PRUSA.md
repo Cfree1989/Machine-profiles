@@ -195,12 +195,12 @@ End `E-500` at `F1000` is identical. Time is ram-dominated (~30 s for 500 mm at 
 | Topic | Cura | Prusa 0.1.15 |
 | --- | --- | --- |
 | Hollow vase | 0 bottom, 0 top, spiral on | Vase Hollow: same |
-| 3-bottom vase | `bottom_layers = 3`, then spiral; `top_bottom_pattern = concentric` | Vase Bottom: 3 bottoms, spiral on; bottoms **Archimedean chords**, tops **rectilinear** |
+| 3-bottom vase | `bottom_layers = 3`, then spiral; `top_bottom_pattern = concentric` | Vase Bottom: 3 bottoms, spiral on; bottoms **and visible tops** Archimedean chords |
 | Infill | Official jobs: 0% | Extra **Infill** preset: 15% **grid**, 3 bottoms, 3 tops, spiral **off** |
 | Walls | `wall_thickness` = nozzle (one wall) | `perimeters = 1`, widths = nozzle |
 | Wall generator | Cura 5.12 default Arachne (3mf is older `setting_version` 9) | `perimeter_generator = arachne` |
 | Fuzzy skin | Lab instructions: must be **off** | Not in the bundle (stays off) |
-| Sequential objects | Not in official jobs | `complete_objects = 0` (on purpose: tall pots vs nozzle) |
+| Sequential objects | Not in official jobs | `complete_objects = 1`, clearance height 400 mm / radius 40 mm (add each pot as its own object) |
 
 Bottom fill pattern is a real path difference on Vase Bottom / Infill. Hollow spiral walls should look like Cura. Preview in PrusaSlicer still draws round tubes; the G-code pitch is the line width (see `MACHINE_BEHAVIOR.md`).
 
@@ -212,7 +212,7 @@ Bottom fill pattern is a real path difference on Vase Bottom / Infill. Hollow sp
 - Wizard thumbnail and plater bat (`vendor/Potterbot/`) are cosmetic; Cura has neither.
 - FAQ nozzle range is typically 1–8 mm; this pack also has 9 and 10 mm variants.
 - Cura quality container is named **Fine** with 1.5 mm layer. Prusa print names omit the layer height.
-- Pause: slicer `M25`. Board `pause.g` runs **`G28`** — do not paste that into the profile (already documented).
+- Pause: slicer `M25` runs board `pause.g`. That file must **park** (lift 10 mm, `X420 Y0`), not `G28`. Copy `reference/firmware/macros/pause.g` to the Duet.
 - Prime/retract buttons stay Duet macros (`E100000` / `E-100000`). Neither slicer primes the ram.
 
 ---
@@ -223,10 +223,11 @@ Bottom fill pattern is a real path difference on Vase Bottom / Infill. Hollow sp
 2. **Plater X 381 vs Cura X 420** — intentional bat clip + validator.
 3. **No `M104 S0`/`M109 S0`** — safer; Cura still prints with them.
 4. **`G1` vs `G0` travel** — same on this firmware.
-5. **Archimedean bottoms vs Cura concentric** — only when bottoms exist.
+5. **Archimedean bottoms/tops vs Cura concentric** — same family of spirals; Cura 5.12 used concentric.
 6. **1 mm tip 0.8 mm layer** — PrusaSlicer limit.
 7. **Infill preset** — extra; official Cura vase is 0% infill.
 8. **Clay Potterbot Retract filament** — required for Infill, optional for vase. Clay Potterbot matches official Cura (retract off). The Retract filament is 80 mm / 80 mm/s / 5 mm hop after layer 0, with a Z10 drop after `G28`.
+9. **Sequential printing on** — not in the official Cura jobs; needed so two vases on the plater both print. Space objects by 40 mm radius. A single merged STL is still one object (split it).
 
 ---
 

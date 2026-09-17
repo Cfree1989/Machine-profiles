@@ -12,9 +12,9 @@ Printer workflow: join the **3DP-9** Wi-Fi → open Duet Web Control (`192.168.4
 | --- | --- |
 | Printer | one machine, **3D Potterbot 9**, with variants **1mm Nozzle** … **10mm Nozzle** (the printer itself never retracts) |
 | Filament | **Clay Potterbot** (retract off; offered with the two vase profiles only) and **Clay Potterbot Retract** (80 mm at 80 mm/s, 5 mm hop after layer 0; works with all three). Both are 0 °C, no fan, 1.75 mm volumetric model |
-| Print | **Vase Hollow**, **Vase Bottom** (3 Archimedean-chord bottoms then spiral), and **Infill** (15% grid, 3 Archimedean-chord bottoms, 3 rectilinear tops, spiral off; needs Clay Potterbot Retract) |
+| Print | **Vase Hollow**, **Vase Bottom** (3 Archimedean-chord bottoms then spiral), and **Infill** (15% grid, 3 Archimedean-chord bottoms, 3 Archimedean-chord tops, spiral off; needs Clay Potterbot Retract). Sequential printing is **on** (one object finishes before the next). |
 
-Layer height is the official Fine value: **1.5 mm**, except **0.8 mm** on the 1 mm nozzle (PrusaSlicer will not slice when line width is not greater than layer height, and it also rejects a first layer taller than the tip). Line width equals the nozzle on the machine (lab Cura notes). Bottoms are **Archimedean chords**. Speeds are the official Cura values: **40 mm/s** print, **80** travel, **20** bottoms. Print and travel acceleration is **3000 mm/s²** (firmware `M201` / Cura).
+Layer height is the official Fine value: **1.5 mm**, except **0.8 mm** on the 1 mm nozzle (PrusaSlicer will not slice when line width is not greater than layer height, and it also rejects a first layer taller than the tip). Line width equals the nozzle on the machine (lab Cura notes). Bottoms and the visible floor are **Archimedean chords**. Speeds are the official Cura values: **40 mm/s** print, **80** travel, **20** bottoms. Print and travel acceleration is **3000 mm/s²** (firmware `M201` / Cura). There is **no fan and no heaters**; cooling stays off so the ram is never asked to wait for plastic to freeze. Post-processing scales print E to match Cura’s rectangular bead volume and holds **full ram flow** on the first spiral loop (PrusaSlicer would otherwise ramp from zero).
 
 Retraction is a **filament** choice (PrusaSlicer keeps retraction on the printer and filament, never on the print profile). The printer stays at the official Cura setting: retract off, start is `G28` only, then Z comes down with the first travel. **Clay Potterbot Retract** adds PrusaSlicer filament overrides: **80 mm at 80 mm/s** with a **5 mm** Z-hop after layer 0 (not the FAQ 1000 mm/s), and its filament start G-code drops to **Z10** after `G28` so that first retract is not at the top of the column. The skirt unretracts at layer height; hops start on layer 1. Selecting **Infill** with Clay Potterbot loaded makes PrusaSlicer switch to Clay Potterbot Retract, because unretracted clay is only compatible with `spiral_vase==1`. End G-code still lifts Z 10 mm and **retracts E-500**, then homes.
 
@@ -36,6 +36,12 @@ Required script:
 ```text
 C:\Repos\Prusa-Slicer-Print-Profiles\Potterbot\scripts\validate_gcode.py
 ```
+
+`validate_gcode.py` first runs `scripts/fix_gcode.py` on the export (Cura volume + full spiral start), then checks the file.
+
+### On the Duet
+
+Upload `reference/firmware/macros/pause.g` over the board’s `pause.g` (DWC → System). The old file homed mid-print. This one lifts 10 mm and parks at X420 Y0. Leave `resume.g` alone.
 
 ### A. Configuration Wizard (vendor bundle)
 
@@ -68,19 +74,19 @@ C:\Repos\Prusa-Slicer-Print-Profiles\Potterbot\scripts\validate_gcode.py
 - Official docs only publish 1.5 mm layer height (Fine / 3D Potter Standard). That value is used on 2–10 mm nozzles. The 1 mm tip is **0.8 mm** so line width stays above layer height. Line width still follows the installed tip. Tune layer height per clay if 1.5 mm is wrong for a large nozzle.
 - Bat origin is X0 Y0 (firmware bed edge). If the bat is shifted on the table, jog and re-zero before trusting the plater.
 - `bed_shape` is a polygon (rounded front corners), so Printer Settings → Bed shape shows **Custom** rather than Rectangular. Its bounding box is still 381 × 360; `validate_gcode.py` keeps checking that rectangle.
-- `pause.g` on the board homes the machine. Slicer pause emits `M25` instead. Do not copy `pause.g` into the profile.
+- `pause.g` on the board must **park**, not home. Replace the Duet file with `reference/firmware/macros/pause.g` (lift 10 mm, move to **X420 Y0**). Slicer pause still emits `M25`, which runs that macro. Resume is unchanged (`resume.g`). Do not paste `pause.g` into the slicer profile.
 
 ## Before you print
 
 1. Install the nozzle that matches the selected printer variant. Line width in the profile equals that nozzle.
-2. Slice a short vase with **Clay Potterbot**, or **Infill** with **Clay Potterbot Retract**. Post-processing runs `validate_gcode.py` and **aborts export** if it sees heater commands, missing `E-500`, missing `M83`, or moves off the 381 × 360 bat.
+2. Slice a short vase with **Clay Potterbot**, or **Infill** with **Clay Potterbot Retract**. Post-processing scales clay volume to the Cura jobs, holds full flow on the first spiral loop, then runs `validate_gcode.py` and **aborts export** if it sees heater commands, a retract still at Z400, missing `E-500`, missing `M83`, or moves off the 381 × 360 bat.
 3. Read the first and last lines. With Clay Potterbot the start is `G28` only (next move must include Z down from 400). With Clay Potterbot Retract the start is `G28` then `G1 Z10 F1000` from the filament start G-code; the first slicer `E-80` must be after that drop. End is `G0 Z10 E-500 F1000` then `G28`.
-4. Charge clay with the Duet Prime macro. Supervised first bead: home, first loop, spiral, end retract.
+4. Charge clay with the Duet Prime macro. Supervised first bead: home, first loop, spiral, end retract. For two pots, add each as its own object (split a multi-body STL) and keep ~40 mm of empty radius so the ram clears the finished one.
 5. Do not leave a tall job unattended until that check passes.
 
 ## Rollback
 
-Use Cura with **3D Potter Standard** as before. Nothing in this repo is written to the printer’s firmware.
+Use Cura with **3D Potter Standard** as before. Nothing in this repo is written to the printer’s firmware except the `pause.g` you copy by hand.
 
 ## Tests
 

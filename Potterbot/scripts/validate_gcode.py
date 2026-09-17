@@ -10,12 +10,14 @@ BED_X = 381.0
 BED_Y = 360.0
 BED_Z = 400.0
 END_RETRACT = 500
+LOW_Z = 20.0
 HEAT_RE = re.compile(r"\bM1(?:04|09|40|90)\b[^;\n]*\bS\s*([0-9]+(?:\.[0-9]+)?)", re.I)
 MOVE_RE = re.compile(
     r"^\s*(?:G0|G1|G2|G3)\b(?P<body>[^;]*)",
     re.I,
 )
 AXIS_RE = re.compile(r"\b([XYZEF])\s*(-?[0-9]+(?:\.[0-9]+)?)", re.I)
+G28_RE = re.compile(r"^G28\b", re.I)
 
 
 class ValidationError(Exception):
@@ -36,7 +38,7 @@ def validate(text: str) -> None:
 
     trailing = [ln for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith(";")]
     end = "\n".join(trailing[-40:])
-    if not re.search(rf"\bE-?{END_RETRACT}\b", end, re.I):
+    if not re.search(rf"\bE-{END_RETRACT}\b", end, re.I):
         errors.append(f"end G-code must retract E-{END_RETRACT} to stop clay ooze")
 
     if not re.search(r"\bM83\b", text):
@@ -44,6 +46,7 @@ def validate(text: str) -> None:
 
     x = y = z = 0.0
     relative = False
+    seen_low_z = False
     for lineno, raw in enumerate(text.splitlines(), 1):
         line = raw.split(";", 1)[0].strip()
         if not line:
@@ -52,6 +55,13 @@ def validate(text: str) -> None:
         if heat is not None and heat > 0:
             errors.append(f"line {lineno}: heater command with S{heat:g} (clay is cold)")
         upper = line.upper()
+        if G28_RE.match(upper):
+            # After home the head is at X420 Y0 Z400. Do not treat that pose as
+            # a printable XY; only Z is used to catch a retract at the column.
+            z = BED_Z
+            seen_low_z = False
+            relative = False
+            continue
         if upper.startswith("G90"):
             relative = False
         elif upper.startswith("G91"):
@@ -66,12 +76,20 @@ def validate(text: str) -> None:
             y = y + axes["Y"] if relative else axes["Y"]
         if "Z" in axes:
             z = z + axes["Z"] if relative else axes["Z"]
+            if z <= LOW_Z:
+                seen_low_z = True
+        e = axes.get("E")
+        if e is not None and e < 0 and not seen_low_z:
+            errors.append(
+                f"line {lineno}: retract E{e:g} at Z{z:g} "
+                "(drop to Z10 after G28 before the first retract)"
+            )
         if not relative:
-            if x < -0.05 or x > BED_X + 0.05:
+            if "X" in axes and (x < -0.05 or x > BED_X + 0.05):
                 errors.append(f"line {lineno}: X{x:g} outside bat {BED_X:g} mm")
-            if y < -0.05 or y > BED_Y + 0.05:
+            if "Y" in axes and (y < -0.05 or y > BED_Y + 0.05):
                 errors.append(f"line {lineno}: Y{y:g} outside printable Y {BED_Y:g} mm")
-            if z < -0.05 or z > BED_Z + 0.05:
+            if "Z" in axes and (z < -0.05 or z > BED_Z + 0.05):
                 errors.append(f"line {lineno}: Z{z:g} outside Z {BED_Z:g} mm")
 
     if errors:
@@ -80,12 +98,18 @@ def validate(text: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if len(args) != 1:
+    if not args:
         print("usage: validate_gcode.py <file.gcode>", file=sys.stderr)
         return 2
-    path = Path(args[0])
+    path = Path(args[-1])
+    from fix_gcode import apply as fix_gcode
+
+    original = path.read_text(encoding="utf-8", errors="replace")
+    fixed = fix_gcode(original)
+    if fixed != original:
+        path.write_text(fixed, encoding="utf-8", newline="\n")
     try:
-        validate(path.read_text(encoding="utf-8", errors="replace"))
+        validate(fixed)
     except ValidationError as exc:
         print(f"{path}:\n{exc}", file=sys.stderr)
         return 1
