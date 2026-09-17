@@ -16,6 +16,7 @@ T1_MIN_X = 25.0
 MAX_HOTEND = 300.0
 MAX_BED = 120.0
 
+KNOWN_CMD = re.compile(r"^(?:G\d+|M\d+|T[01]\b|SET_VELOCITY_LIMIT\b)", re.I)
 FORBIDDEN = [
     (re.compile(r"^G29\b", re.I), "G29 bed mesh/level is not in the ideaMaker reference"),
     (re.compile(r"^M92\b", re.I), "M92 would overwrite firmware calibrations"),
@@ -102,6 +103,9 @@ def validate(path: Path) -> list[str]:
         if upper.startswith("G90"):
             relative = False
 
+        if line and not KNOWN_CMD.match(line):
+            where = " after M1001" if in_print else ""
+            errors.append(f"line {lineno}: not G-code{where} ({line[:80]})")
         for rx, msg in FORBIDDEN:
             if rx.search(line):
                 errors.append(f"line {lineno}: forbidden: {msg} ({line})")

@@ -1,6 +1,8 @@
 # Port review: ideaMaker → PrusaSlicer (bundle 0.5.51)
 
-Review date: 2026-09-17. Reviewed against PrusaSlicer **2.9.6** (installed build) and ideaMaker **5.4.2.8790** sources in `reference/ideamaker/`. Nothing in this review changed the profile; it is a findings list for the next revision.
+Review date: 2026-09-17. Reviewed against PrusaSlicer **2.9.6** (installed build) and ideaMaker **5.4.2.8790** sources in `reference/ideamaker/`. This file is the findings list from 0.5.51.
+
+Applied later: **0.5.52** removed dead `wipe_tower_x` / `wipe_tower_y`. **0.5.53** quoted `start_filament_gcode`, wipe 95 %, PLA fan 0/50/100, first-use E11 unretract, idle nozzle stays 180 °C on layer 2. **0.5.54** docs/tests match those values; `validate_gcode.py` rejects non-G-code lines after `M1001`. **0.5.55** sequential skipped `;LAYER:N` + first-layer FLOW on every object; M73 ~30 s preheat; wipe-tower purge stays PrusaSlicer 15 mm³. **0.5.56** Small Features Ø20 mm, tool-change E±11 at 20 mm/s, first bottom-solid accel 5000. **0.5.57** dropped those (no PrusaSlicer setting); keep native Ø13 small perimeters, 40/25 retract, solid accel 2000.
 
 ## Scope and method
 
@@ -70,7 +72,7 @@ The wipe-tower position moved from the print profile to the project (3MF) in Pru
 
 - With two tools and the profile default `wipe_tower = 1`, `complete_objects = 1` is a hard error: *"The Wipe Tower is currently not supported for multimaterial sequential prints."* The user must turn the tower off first.
 - Without the tower it slices. Observed sequence: T0 cube complete → `G1 Z20.1` → travel to object 2 origin → `M107` → `G1 E-9.5 F2400` → `M104 T0 S180` / `M109 T1 S230` / `T1` → bare `Filament Name…` line (1.1) → `G1 E-1.5` → `G1 Z.3` → print. There is no purge; the nozzle swap (electronic lift) happens over the bare bed where object 2 will start; the prime deficit from 1.4 applies.
-- Post-processing (`ensure_m99123_first.py`) works but has gaps: the `M104 T1 S230` preheat is inserted correctly (on object 1's last layer); `;LAYER:100` (object 2's first layer) is not synthesized, so numbering goes 99 → 101; the 90 % first-layer FLOW is applied only between `M1001` and `;LAYER:1`, so object 2's first layer is not scaled.
+- Post-processing (`ensure_m99123_first.py`, 0.5.55): synthesizes the skipped `;LAYER:N` on each later object's first layer, and applies 90 % first-layer FLOW whenever Z is still the first-layer height (not only before `;LAYER:1`). The `M104 T1 S230` preheat is inserted on object 1's last layer (~30 s of `M73` remaining time). There is still no purge between objects.
 - `extruder_clearance_height = 80` / `extruder_clearance_radius = 90` are operator measurements (see `MACHINE_BEHAVIOR.md`). The CLI did not reject a 40 mm edge gap between the cubes; confirm the collision circles in the GUI before relying on it.
 
 ## 2. ideaMaker settings not (fully) carried over
@@ -84,12 +86,12 @@ Source: `reference/ideamaker/Settings/*.png` (`Standard - Pro2 Plus HS - PLA`) a
 | Infill 20 % Grid, overlap 10 %, anchor 0 % | Left / Dual jobs: grid at 4.0 mm spacing = **20 %**; Compensation Test: 5.33 mm = 15 % | `fill_density = 15%`, `fill_pattern = adaptivecubic`, `infill_overlap = 15%`, `infill_anchor = 2` / `infill_anchor_max = 12` | Pattern from neither source; density from the calibration cube, not the production jobs. The checked-in GUI export was still `grid`. |
 | Elephant Foot Compensation | **off** (0.00) | `elefant_foot_compensation = 0.20` | Deviation introduced in 0.5.47; notes acknowledge holes open ≈ 0.2. Not from ideaMaker. |
 | Layer Start Point: Fixed (0, 0) | seams pulled to the corner nearest the origin | `seam_position = aligned` | Cosmetic; `rear` is the closest fixed-direction analogue. |
-| Small Features Ø 20 mm at 50 % | small walls at 75 mm/s | `small_perimeter_speed = 75` | Speed matches; PrusaSlicer's threshold is fixed at 6.5 mm radius (Ø 13). |
+| Small Features Ø 20 mm at 50 % | small walls at 75 mm/s | `small_perimeter_speed = 75`. Threshold is fixed at radius 6.5 mm (Ø13) | **Skipped (0.5.57)** — no PrusaSlicer size control. |
 | Overhang Shells > 30° at 50 mm/s, fan 100 % | `WALL-OUTER` 50 mm/s segments; `M106 S255` bursts | `enable_dynamic_overhang_speeds` 15 / 25 / 30 / 50 %; `bridge_fan_speed = 100` also covers overhang perimeters | Different slowdown model; fan parity is fine. |
 | Enable Bridging Detection | **off** (bridges printed as 120 mm/s infill) | bridges detected: 30 mm/s, 0.9 flow, accel 2000 | Documented deviation; PrusaSlicer always detects bridges. |
 | Minimal Travel of Retraction 0.60 mm | travels 0.6–1 mm are mostly retracted | `retract_before_travel = 1` | Minor. |
-| Extruder-switch retract / restart 20 mm/s | `G1 F1200 E-11` / `G1 F1200 E11` | 11 mm at 40 mm/s (`retract_speed`) / 25 mm/s (`deretract_speed`) | Length matches; speeds do not (PrusaSlicer has no separate tool-change speed). |
-| Base / Bottom Solid Fill accel 5000; gap fill | `SOLID-FILL` at 5000 on layers 0–3; `GAP-FILL` mostly at 2000 | `solid_infill_acceleration = 2000` for all solid; gap fill falls to `default_acceleration` 5000 | Minor; PrusaSlicer has one solid-infill acceleration. |
+| Extruder-switch retract / restart 20 mm/s | `G1 F1200 E-11` / `G1 F1200 E11` | 11 mm at 40 mm/s out / 25 mm/s in (`retract_speed` / `deretract_speed`) | **Skipped (0.5.57)** — no separate tool-change speed. |
+| Base / Bottom Solid Fill accel 5000; gap fill | `SOLID-FILL` at 5000 on layers 0–3; `GAP-FILL` mostly at 2000 | `solid_infill_acceleration = 2000` for all solid; gap fill uses `default_acceleration` 5000 | **Skipped (0.5.57)** — one solid-infill accel in PrusaSlicer. |
 | Cool Down Inactive Extruder → Move to Park Position X30 Y295 | `G0 F9000 X30.000 Y295.000` before all 294 tool changes | not copied (intentional, documented) | Fine for tower prints; see 1.7 for sequential. |
 | Wipe Tower: min 20 mm³, 3 loops / extruder, octagon Ø 50 → 25, 150 mm/s, brim 2 | 46 mm E on layer 0, then 28 → 13.7 mm/layer (≈ 33 mm³) at one change per layer | 60 mm rectangle, purge lines 40–55 mm/s (16–23 on layer 1), structure 150 mm/s, `wipe_tower_brim_width = 3`, ≈ 11.7 mm/layer (≈ 28 mm³) | Volumes comparable. Purge = `filament_minimal_purge_on_wipe_tower` 15 mm³ (PrusaSlicer default, not set in the bundle); `multimaterial_purging = 140` is irrelevant for a two-nozzle printer. |
 | Dual skirt at 15 mm/s (`F900`) | present in `MulticolorRaise3d.gcode` | `skirts = 0` | Documented. |
@@ -104,29 +106,29 @@ Settings that **do** match, confirmed in the exported G-code: layer 0.20 / first
 
 Works: tool-change temperatures (`M104 T{prev} S180`, `M109 T{next} S230`), standby, `T` emitted by the slicer, purge volume in the same range as ideaMaker, preheat insertion (145–403 lines ahead, median 228; ideaMaker 64–2,200, median 755 ≈ 30 s — the `ensure_m99123_first.py` docstring says "~285 lines", the measured median is 755), end sequence identical to the ideaMaker dual file.
 
-Needs attention, in order: 1.4 (T1 first-use prime), 1.5 (non-PLA layer-2 wake-up and first-layer temperature), 1.1 (garbage line at each T1 swap in flat configs / silent no-op in the GUI), 1.6 (tower position claim), and the preheat lead being line-based rather than time-based. PrusaSlicer also emits `M107`, `M220 S100` and `G4 S0` around each swap (harmless).
+Needs attention, in order: 1.4 (T1 first-use prime), 1.5 (non-PLA layer-2 wake-up and first-layer temperature), 1.1 (garbage line at each T1 swap in flat configs / silent no-op in the GUI), 1.6 (tower position claim). Preheat lead is time-based in 0.5.55. PrusaSlicer also emits `M107`, `M220 S100` and `G4 S0` around each swap (harmless).
 
 Test artifact worth knowing: in the CLI runs PrusaSlicer crashed (`-1073741819`) after writing the G-code, reporting "gcode path conflicts found between WipeTower and Cube_T1". That happened because the tower defaulted onto the second test cube (see 1.6), not because of the profile.
 
 ## 4. Docs and tests accuracy
 
 - `reference/prusaslicer/Raise3DTest_0.4n_0.2mm_PLA_PRO2PLUS_HS_DUAL_3h2m.gcode` was exported from an older profile revision (`fill_pattern = grid`, `elefant_foot_compensation = 0`, `min_print_speed = 15`, empty `start_filament_gcode`) and is a **single-tool** print (no `T1`). There is no real dual GUI export checked in.
-- README, `GCODE_MAPPING.md` and `MACHINE_BEHAVIOR.md` state "fan 0 / 50 % / 100 %" and "default wipe tower X50 Y140"; neither holds in 2.9.6 output.
+- README / `GCODE_MAPPING.md` / `MACHINE_BEHAVIOR.md` (fixed 0.5.52–0.5.54): PLA fan **is** 0 / 50 / 100; wipe-tower position is a project setting (2.9.6 default around X180 Y140), not X50 Y140.
 - `idle_temperature = 70` is inert (`ooze_prevention = 0`); harmless but misleading next to "standby 180".
-- Tests are text-level and lock in the problematic values (`retract_before_wipe = 100%`, `full_fan_speed_layer = 2`, `wipe_tower_x = 50`), so they cannot catch 1.1, 1.2, 1.3 or 1.6. A slice-and-inspect test, or at least a "no non-G-code lines after `M1001`" check in `validate_gcode.py`, would.
+- Tests (fixed 0.5.53–0.5.55) lock `retract_before_wipe = 95%`, `full_fan_speed_layer = 3`, no `wipe_tower_x`, no `filament_minimal_purge_on_wipe_tower`. `validate_gcode.py` rejects non-G-code lines after `M1001` (the broken `start_filament_gcode` dump).
 
-## 5. Suggested changes (not applied)
+## 5. Suggested changes
 
-1. Quote `start_filament_gcode` in both filament sections, or drop it because `start_gcode` already emits `M221`.
-2. `retract_before_wipe = 95%,95%` for the ≈ 0.2 mm outer-wall wipe.
-3. PLA: `min_fan_speed = 100`, `full_fan_speed_layer = 3` (keep `disable_fan_first_layers = 1`, `max_fan_speed = 100`).
-4. Remove `G1 F200 E-11.00` from the dual start block (or add a first-use 11 mm prime) so PrusaSlicer's retraction accounting matches the physical state.
-5. `toolchange_gcode`: use `first_layer_temperature` when `layer_num == 0`. Consider `ooze_prevention = 1` with `idle_temperature = 180` so PrusaSlicer owns standby and stops re-heating the idle tool at layer 2 (test that its behaviour on this firmware is acceptable), or strip the layer-2 `M104 … T{idle}` in post-process.
-6. `top_solid_layers = 6` / `top_solid_min_thickness = 1.2` to match; optionally `fill_pattern = grid`, `fill_density = 20%`, `infill_overlap = 10%` to match the production jobs.
-7. Decide on `elefant_foot_compensation` (ideaMaker had none).
-8. Remove the dead `wipe_tower_x` / `wipe_tower_y` keys and update docs and tests; document that the tower position lives in the project.
-9. For sequential use: document "turn off the wipe tower", synthesize `;LAYER:N` for later first layers, apply first-layer FLOW to every object's layer 0, and verify the clearance circles in the GUI.
-10. Optional: time-based preheat lead (derived from `M73`) instead of 400 lines; explicit `filament_minimal_purge_on_wipe_tower = 20` to mirror ideaMaker's minimal tower volume.
+1. Quote `start_filament_gcode` in both filament sections, or drop it because `start_gcode` already emits `M221`. **Done (0.5.53).**
+2. `retract_before_wipe = 95%,95%` for the ≈ 0.2 mm outer-wall wipe. **Done (0.5.53).**
+3. PLA: `min_fan_speed = 100`, `full_fan_speed_layer = 3` (keep `disable_fan_first_layers = 1`, `max_fan_speed = 100`). **Done (0.5.53).**
+4. Remove `G1 F200 E-11.00` from the dual start block (or add a first-use 11 mm prime) so PrusaSlicer's retraction accounting matches the physical state. **Done (0.5.53):** kept start `E-11`; post-process emits first-use `G1 E11 F1500` (PrusaSlicer deretract 25 mm/s).
+5. `toolchange_gcode`: use `first_layer_temperature` when `layer_num == 0`. Consider `ooze_prevention = 1` with `idle_temperature = 180` so PrusaSlicer owns standby and stops re-heating the idle tool at layer 2 (test that its behaviour on this firmware is acceptable), or strip the layer-2 `M104 … T{idle}` in post-process. **Done (0.5.53):** first-layer wait on layer 0; post-process strips idle `M104 S{print} T{idle}`.
+6. `top_solid_layers = 6` / `top_solid_min_thickness = 1.2` to match; optionally `fill_pattern = grid`, `fill_density = 20%`, `infill_overlap = 10%` to match the production jobs. **Skipped** (keep 4 layers / 15% adaptive cubic).
+7. Decide on `elefant_foot_compensation` (ideaMaker had none). **Skipped** (keep 0.20).
+8. Remove the dead `wipe_tower_x` / `wipe_tower_y` keys and update docs and tests; document that the tower position lives in the project. **Done (0.5.52 / 0.5.54).**
+9. For sequential use: document "turn off the wipe tower", synthesize `;LAYER:N` for later first layers, apply first-layer FLOW to every object's layer 0, and verify the clearance circles in the GUI. **Done (0.5.55)** for the G-code gaps and the wipe-tower-off note; clearance circles still need a GUI check.
+10. Optional: time-based preheat lead (derived from `M73`) instead of 400 lines; explicit `filament_minimal_purge_on_wipe_tower = 20` to mirror ideaMaker's minimal tower volume. **Preheat done (0.5.55)** (~30 s from `M73`, 400-line fallback). **Purge floor skipped** — keep PrusaSlicer's default 15 mm³ (key not set in the bundle).
 
 ## Reproduction
 

@@ -52,7 +52,7 @@ This profile is **experimental**. It is not production-ready.
 | Plate shape | `;Plate Shape: 0` | Confirmed |
 | This print bounding box | Left: X 101.505–203.495, Y 91.316–213.451, Z 0–43.100. Dual: X 69.430–183.760, Y 49.015–308.595, Z 0–60.900 (wipe tower exceeds 305 mm Y) | Confirmed |
 | Official Pro2 Plus volume | 305 × 305 × 605 mm | [Supported by Raise3D documentation](https://www.raise3d.com/pro2-series/) |
-| T1 keep-out | Leftmost ~25 mm (factory right-nozzle X offset in firmware; slicer XY offset 0) | Assumption requiring physical testing. PrusaSlicer 2.9.6 has no per-tool printable polygon. Bundle uses bed texture + default wipe tower X50 Y140 + validator. |
+| T1 keep-out | Leftmost ~25 mm (factory right-nozzle X offset in firmware; slicer XY offset 0) | Assumption requiring physical testing. PrusaSlicer 2.9.6 has no per-tool printable polygon. Bundle uses bed texture + validator; drag the wipe tower off the keep-out (position is a project setting). |
 | Sequential clearance | Operator ruler: T0 L42.5 R70 F50 B30; T1 L67.5 R45 F50 B30. Gantry **80**. This bundle: height **80**, radius **90** (whole head; T0 front-right ~86). ideaMaker stock was gantry 65; T0 37/63/45/70; T1 62/38/45/70 | Operator measurements. PrusaSlicer cylinder only. |
 | izumi 330 × 327.5 bed | Community Pro2 (not Plus), 2022 | Community-derived; **not used** |
 
@@ -74,7 +74,7 @@ This profile is **experimental**. It is not production-ready.
 | `G10` / `G11` | No | |
 | `SET_VELOCITY_LIMIT` | `ACCEL=5000`, `ACCEL=2000`, `SQUARE_CORNER_VELOCITY=10` | Confirmed Klipper. `Compensation Test.gcode` (ideaMaker 5.5.0.8810): walls/infill/first layer stay **5000**; later solid/top drop to **2000**. `MulticolorRaise3d.gcode` was 5469×5000 / 5468×2000 because that job was almost all solid vs travel. PrusaSlicer 2.9.6 emits `M204 S`; post-process converts. Print profile: walls/infill/first 5000, solid/top 2000, travel 5000. |
 | `M221` | Start `S94`, end `S100` | Confirmed |
-| `M106` | `S0`, `S128`, `S255` | Confirmed; first layer fan off |
+| `M106` | `S0`, `S128`, `S255` | Confirmed in ideaMaker. PrusaSlicer PLA uses `disable_fan_first_layers = 1`, `full_fan_speed_layer = 3`, `min_fan_speed = max_fan_speed = 100` so layer 1 is off, layer 2 is 50 %, later layers 100 %. |
 
 ## Start sequence (complete, from this file)
 
@@ -100,7 +100,7 @@ Dual file: `M221` T0 and T1 `S100` twice around `M1002`, `M104 T0 S0` and `M104 
 
 | Sequence | Status |
 | --- | --- |
-| Tool change | Confirmed in `MulticolorRaise3d.gcode`: park `X30 Y295`, retract 11 mm at `F1200`, standby `M104 T{prev} S180`, wait `M109 T{next} S230`, `T`, wipe-tower prime. Mid-print `M104 T{next} S230` before the swap (gaps 64–2200, median 762). No `M218`. Electronic lift is firmware. PrusaSlicer copies standby/`M109`; `ensure_m99123_first.py` inserts next-tool `M104` ~400 lines before `M109`. Wipe tower default X50 Y140; this ideaMaker file’s octagon is ~X50 Y241 |
+| Tool change | Confirmed in `MulticolorRaise3d.gcode`: park `X30 Y295`, retract 11 mm at `F1200`, standby `M104 T{prev} S180`, wait `M109 T{next} S230`, `T`, wipe-tower prime. Mid-print `M104 T{next} S230` before the swap (gaps 64–2200, median 762 ≈ 30 s). No `M218`. Electronic lift is firmware. PrusaSlicer copies standby/`M109`; `ensure_m99123_first.py` inserts next-tool `M104` ~30 s before `M109` from `M73` (400-line fallback). Tool-change retract uses PrusaSlicer 40 / 25 mm/s. Wipe tower position lives on the project (2.9.6 default around X180 Y140); this ideaMaker file’s octagon is ~X50 Y241. Min tower purge is PrusaSlicer’s 15 mm³ default. Sequential: turn the wipe tower off; post-process fills skipped object-first `;LAYER:N` and first-layer FLOW. |
 | Pause / `M600` / `M2000` | Not present in this file |
 | Recovery block | Present as **comments** after `;Data end` (`Recover start:29` … `Recover end`). Not executable G-code. **Not implemented** as PrusaSlicer custom G-code |
 
@@ -129,6 +129,6 @@ These are 2022 **Marlin** PrusaSlicer profiles for pre-Hyper Speed Pro2/Pro2 Plu
 4. Whether PrusaSlicer’s per-feature `SET_VELOCITY_LIMIT` (5000 walls/infill/first, 2000 solid/top, 5000 travel, from converted `M204`) matches `Compensation Test.gcode` ringing. Klipper flavor cannot emit SET_VELOCITY_LIMIT natively.
 5. Pause/resume (`M2000`) on this Hyper Speed firmware.
 6. Right nozzle and dual-head lift: dual G-code confirmed; right-only G-code confirmed (`RightonlyExtruder.gcode`). Confirm firmware XY offset (do not also slice 25 mm). Dual purge is in-place `E10`/`E-11` at home, then XY to the first print point at Z15, then Z. Right-only uses the same `X80 Y0` wipe as left after homing on T1. Keep T1 paths and the wipe tower off X < 25 mm; measure the real keep-out. Watch Stage 6–7 for collisions and ~25 mm shift.
-7. Dual tool-change: PrusaSlicer wipe tower (default X50 Y140; you can drag) vs ideaMaker’s octagon at ~X50 Y241 in `MulticolorRaise3d.gcode`. Confirm the tower is where you put it and ooze does not hit the part.
+7. Dual tool-change: PrusaSlicer wipe tower (drag on the plater; 2.9.6 default around X180 Y140) vs ideaMaker’s octagon at ~X50 Y241 in `MulticolorRaise3d.gcode`. Confirm the tower is where you put it and ooze does not hit the part.
 8. Relative E (`M83`) vs ideaMaker `M82` — inspect first dual slice for mixed E mode.
 9. Volumetric limit is `min(operator XL, Hyper FFF L1 15 mm³/s)`. PLA is 230 °C / M221 S94 / first-layer FLOW 90% / top FLOW 106% / fan 0→50%→100%. Other materials still use the operator `* XL` presets. Dual standby stays 180 °C; filament idle is not emitted in tool-change G-code.
