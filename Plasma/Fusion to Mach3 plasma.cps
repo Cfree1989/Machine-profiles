@@ -1,11 +1,11 @@
 /**
-  Copyright (C) 2012-2021 by Autodesk, Inc.
+  Copyright (C) 2012-2026 by Autodesk, Inc.
   All rights reserved.
 
   Mach3 Plasma post processor configuration.
 
-  $Revision: 43759 a148639d401c1626f2873b948fb6d996d3bc60aa $
-  $Date: 2022-04-12 21:31:49 $
+  $Revision: 44226 fcaa521d4c71c947f729a6871e6f3619e8022805 $
+  $Date: 2026-05-19 17:26:35 $
 
   FORKID {C59C057C-1427-4281-AE93-4F04BBA3F45E}
 */
@@ -13,12 +13,12 @@
 description = "Mach3 Plasma";
 vendor = "Artsoft";
 vendorUrl = "http://www.machsupport.com";
-legal = "Copyright (C) 2012-2021 by Autodesk, Inc.";
+legal = "Copyright (C) 2012-2026 by Autodesk, Inc.";
 certificationLevel = 2;
 minimumRevision = 45702;
 highFeedrate = (unit == IN) ? 100 : 2500;
 
-longDescription = "Generic post for Mach3 plasma.";
+longDescription = "Mach3 plasma post for the EZ-Router. Pierce height, cut height, and pierce time are read from the Fusion tool. Z output is on by default.";
 
 extension = "tap";
 setCodePage("ascii");
@@ -50,6 +50,7 @@ properties = {
     group      : "formats",
     type       : "boolean",
     value      : true,
+    order      : 1,
     scope      : "post"
   },
   sequenceNumberStart: {
@@ -58,6 +59,7 @@ properties = {
     group      : "formats",
     type       : "integer",
     value      : 10,
+    order      : 2,
     scope      : "post"
   },
   sequenceNumberIncrement: {
@@ -66,6 +68,7 @@ properties = {
     group      : "formats",
     type       : "integer",
     value      : 5,
+    order      : 3,
     scope      : "post"
   },
   separateWordsWithSpace: {
@@ -78,10 +81,10 @@ properties = {
   },
   pierceDelay: {
     title      : "Pierce delay",
-    description: "Specifies the delay to pierce in seconds.",
+    description: "Fallback pierce delay in seconds, used only when the tool has no pierce time.",
     group      : "preferences",
     type       : "number",
-    value      : 1,
+    value      : 0.1,
     scope      : "post"
   },
   probeOffset: {
@@ -102,15 +105,15 @@ properties = {
   },
   useZAxis: {
     title      : "Use Z axis",
-    description: "Specifies to enable the output for Z coordinates.",
+    description: "Output Z moves. Leave this on. Pierce and cut height come from the tool.",
     group      : "configuration",
     type       : "boolean",
-    value      : false,
+    value      : true,
     scope      : "post"
   },
   pierceHeight: {
     title      : "Pierce Height",
-    description: "Specifies the pierce height.",
+    description: "Unused when the tool has a pierce height. Kept so older NC programs still open.",
     group      : "preferences",
     type       : "number",
     value      : 0,
@@ -155,6 +158,71 @@ var gUnitModal = createModal({}, gFormat); // modal group 6 // G20-22
 // collected state
 var sequenceNumber;
 var initialG31 = false;
+var sectionPierceZ = 0;
+var sectionCutZ = 0;
+var sectionPierceDelay = 0;
+var toolHeightsLoaded = false;
+
+// Tool lengths may arrive in millimeters or already in program units.
+// A cut height above 0.5 in an inch program is millimeters.
+function toProgramLength(raw) {
+  if (unit == MM) {
+    return raw;
+  }
+  if (Math.abs(raw) > 0.5) {
+    return raw / 25.4;
+  }
+  return raw;
+}
+
+function loadToolHeights() {
+  var pierceRaw = undefined;
+  var cutRaw = undefined;
+  if (hasParameter("operation:tool_pierceHeight")) {
+    pierceRaw = getParameter("operation:tool_pierceHeight");
+  } else if (tool.pierceHeight != undefined) {
+    pierceRaw = tool.pierceHeight;
+  }
+  if (hasParameter("operation:tool_cutHeight")) {
+    cutRaw = getParameter("operation:tool_cutHeight");
+  } else if (tool.cutHeight != undefined) {
+    cutRaw = tool.cutHeight;
+  }
+  if (pierceRaw == undefined || cutRaw == undefined) {
+    error(localize("The plasma tool is missing pierce height or cut height."));
+    return;
+  }
+  sectionPierceZ = toProgramLength(pierceRaw);
+  sectionCutZ = toProgramLength(cutRaw);
+  if (hasParameter("operation:tool_pierceTime")) {
+    sectionPierceDelay = getParameter("operation:tool_pierceTime");
+  } else if (tool.pierceTime != undefined) {
+    sectionPierceDelay = tool.pierceTime;
+  } else {
+    sectionPierceDelay = getProperty("pierceDelay");
+  }
+  toolHeightsLoaded = true;
+  writeComment(
+    "Pierce height " + xyzFormat.format(sectionPierceZ) +
+    " cut height " + xyzFormat.format(sectionCutZ) +
+    " pierce time " + secFormat.format(sectionPierceDelay)
+  );
+}
+
+// Traverse above the pierce height stays put. Anything lower, before the arc, is the pierce.
+// While the arc is on, Z stays at the tool cut height.
+function cuttingZ(z, torchOn) {
+  if (!toolHeightsLoaded || !getProperty("useZAxis")) {
+    return z;
+  }
+  if (torchOn) {
+    return sectionCutZ;
+  }
+  if (z < sectionPierceZ) {
+    return sectionPierceZ;
+  }
+  return z;
+}
 
 /**
   Writes the specified block.
@@ -181,7 +249,6 @@ function writeComment(text) {
 
 function onOpen() {
   if (getProperty("useZAxis")) {
-    zFormat.setOffset(getProperty("pierceHeight"));
     zOutput = createVariable({prefix:"Z"}, zFormat);
   } else {
     zOutput.disable();
@@ -216,7 +283,7 @@ function onOpen() {
       writeComment("  " + localize("model") + ": " + model);
     }
     if (description) {
-      writeComment("  " + localize("description") + ": "  + description);
+      writeComment("  " + localize("description") + ": " + description);
     }
   }
 
@@ -336,6 +403,7 @@ function onSection() {
 
   switch (tool.type) {
   case TOOL_PLASMA_CUTTER:
+    loadToolHeights();
     break;
   default:
     error(localize("The CNC does not support the required tool/process. Only plasma cutting is supported."));
@@ -373,9 +441,9 @@ function onSection() {
     var previousFinalPosition = isFirstSection() ? initialPosition : getFramePosition(getPreviousSection().getFinalPosition());
     if (xyzFormat.getResultingValue(previousFinalPosition.z) <= xyzFormat.getResultingValue(initialPosition.z)) {
       if (getProperty("useG0")) {
-        writeBlock(gMotionModal.format(0), zOutput.format(initialPosition.z));
+        writeBlock(gMotionModal.format(0), zOutput.format(cuttingZ(initialPosition.z, false)));
       } else {
-        writeBlock(gMotionModal.format(1), zOutput.format(initialPosition.z), feedOutput.format(highFeedrate));
+        writeBlock(gMotionModal.format(1), zOutput.format(cuttingZ(initialPosition.z, false)), feedOutput.format(highFeedrate));
       }
       zIsOutput = true;
     }
@@ -391,9 +459,9 @@ function onSection() {
 
   if (getProperty("useZAxis") && !zIsOutput) {
     if (getProperty("useG0")) {
-      writeBlock(gMotionModal.format(0), zOutput.format(initialPosition.z));
+      writeBlock(gMotionModal.format(0), zOutput.format(cuttingZ(initialPosition.z, false)));
     } else {
-      writeBlock(gMotionModal.format(1), zOutput.format(initialPosition.z), feedOutput.format(highFeedrate));
+      writeBlock(gMotionModal.format(1), zOutput.format(cuttingZ(initialPosition.z, false)), feedOutput.format(highFeedrate));
     }
   }
 }
@@ -439,20 +507,13 @@ function onPower(power) {
   initialG31 = false;
   writeBlock(mFormat.format(power ? 3 : 5));
   powerIsOn = power;
-  if (power) {
-    onDwell(getProperty("pierceDelay"));
-    if (zFormat.isSignificant(getProperty("pierceHeight"))) {
-      feedOutput.reset();
-      var f = (hasParameter("operation:tool_feedEntry") ? getParameter("operation:tool_feedEntry") : toPreciseUnit(1000, MM));
-      zFormat.setOffset(0);
-      zOutput = createVariable({prefix:"Z"}, zFormat);
-      writeBlock(gMotionModal.format(1), zOutput.format(getCurrentPosition().z), feedOutput.format(f));
-    }
-  } else {
-    if (zFormat.isSignificant(getProperty("pierceHeight"))) {
-      zFormat.setOffset(getProperty("pierceHeight"));
-      zOutput = createVariable({prefix:"Z"}, zFormat);
-    }
+  if (power && toolHeightsLoaded) {
+    onDwell(sectionPierceDelay);
+    feedOutput.reset();
+    zOutput.reset();
+    var f = (hasParameter("operation:tool_feedEntry") ? getParameter("operation:tool_feedEntry") : toPreciseUnit(1000, MM));
+    writeBlock(gMotionModal.format(1), zOutput.format(sectionCutZ), feedOutput.format(f));
+  } else if (!power) {
     writeln("");
   }
 }
@@ -460,7 +521,7 @@ function onPower(power) {
 function onRapid(_x, _y, _z) {
   var x = xOutput.format(_x);
   var y = yOutput.format(_y);
-  var z = zOutput.format(_z);
+  var z = zOutput.format(cuttingZ(_z, powerIsOn));
   // if plunge move, activate probe if enabled
   if (!x && !y && z && (_z < getCurrentPosition().z) && !initialG31 && !powerIsOn) {
     writeG31();
@@ -488,7 +549,7 @@ function onLinear(_x, _y, _z, feed) {
   }
   var x = xOutput.format(_x);
   var y = yOutput.format(_y);
-  var z = zOutput.format(_z);
+  var z = zOutput.format(cuttingZ(_z, powerIsOn));
   var f = feedOutput.format(feed);
   // if plunge move, activate probe if enabled
   if (!x && !y && z && (_z < getCurrentPosition().z) && !initialG31 && !powerIsOn) {
