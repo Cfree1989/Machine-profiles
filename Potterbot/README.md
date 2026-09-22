@@ -26,7 +26,7 @@ The plater is the **15×15″ bat** clipped to Y travel: **381 × 360 × 400 mm*
 
 ### Lab PC
 
-Print profiles call `scripts\validate_gcode.py` by **absolute path**. Put this repo at `C:\Repos\Prusa-Slicer-Print-Profiles`. Then install:
+Print profiles call `scripts\validate_gcode.py` by **absolute path**. Put this repo at `C:\Repos\Machine-profiles`. Then install:
 
 1. **PrusaSlicer 2.9.6** (current stable).
 2. **Python 3** from [python.org](https://www.python.org/downloads/). Confirm `py -3 --version`.
@@ -34,7 +34,7 @@ Print profiles call `scripts\validate_gcode.py` by **absolute path**. Put this r
 Required script:
 
 ```text
-C:\Repos\Prusa-Slicer-Print-Profiles\Potterbot\scripts\validate_gcode.py
+C:\Repos\Machine-profiles\Potterbot\scripts\validate_gcode.py
 ```
 
 `validate_gcode.py` first runs `scripts/fix_gcode.py` on the export (Cura volume + full spiral start), then checks the file.

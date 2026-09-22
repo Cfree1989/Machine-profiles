@@ -10,7 +10,7 @@ VENDOR = ROOT / "vendor" / "Potterbot.ini"
 BUNDLE = ROOT / "profiles" / "Potterbot-9-bundle.ini"
 IDX = ROOT / "vendor" / "Potterbot.idx"
 
-CONFIG_VERSION = "0.1.19"
+CONFIG_VERSION = "0.1.20"
 MODEL_ID = "POTTERBOT9"
 NOZZLES = list(range(1, 11))
 BED_X = 381  # 15 in bat; firmware X travel is 420
@@ -308,7 +308,7 @@ def vendor_block() -> str:
         )
 
     post = (
-        r'"C:\\Windows\\py.exe -3 C:\\Repos\\Prusa-Slicer-Print-Profiles\\Potterbot\\scripts\\validate_gcode.py"'
+        r'"C:\\Windows\\py.exe -3 C:\\Repos\\Machine-profiles\\Potterbot\\scripts\\validate_gcode.py"'
     )
     lines.extend(
         [
@@ -559,12 +559,14 @@ def idx_text() -> str:
         "NO_TEMPLATES hides Template filaments. Wizard thumbnail, bed model and bat texture in vendor/Potterbot.\n"
         "0.1.18 bed_shape follows the bat's rounded front corners (12.7 mm) so the plater shows the real outline. "
         "Bat texture is darker grey with a visible 10 / 50 mm grid.\n"
-        f"{CONFIG_VERSION} Quote start_filament_gcode so Clay Potterbot Retract actually emits G1 Z10 after G28. "
+        "0.1.19 Quote start_filament_gcode so Clay Potterbot Retract actually emits G1 Z10 after G28. "
         "Post-process scales print E to Cura rectangular volume and holds full ram flow on the first spiral loop. "
         "Infill internal-bridge flow matches a normal wall. Visible tops are Archimedean chords. "
         "Sequential printing on (complete objects; clearance height 400 mm, radius 40 mm). "
         "pause.g on the Duet must park (lift 10 mm, X420 Y0) not home; slicer pause still emits M25. "
         "Cooling stays off (no fan, no heaters).\n"
+        f"{CONFIG_VERSION} Post-process script path is C:\\\\Repos\\\\Machine-profiles\\\\Potterbot\\\\scripts\\\\ "
+        "(repo folder renamed from Prusa-Slicer-Print-Profiles).\n"
     )
 
 

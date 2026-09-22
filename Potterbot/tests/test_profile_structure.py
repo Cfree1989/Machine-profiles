@@ -56,12 +56,12 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertTrue(BUNDLE.is_file())
         self.assertEqual(VENDOR.read_text(encoding="utf-8"), BUNDLE.read_text(encoding="utf-8"))
-        self.assertIn("0.1.19 ", IDX.read_text(encoding="utf-8"))
+        self.assertIn("0.1.20 ", IDX.read_text(encoding="utf-8"))
 
     def test_single_printer_model(self) -> None:
         self.assertEqual(self.ini["vendor"]["name"], "3D Potter (experimental)")
         self.assertEqual(self.ini["vendor"]["repo_id"], "non-prusa-fff")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.19")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.20")
         model = self.ini["printer_model:POTTERBOT9"]
         self.assertEqual(model["variants"], "1;2;3;4;5;6;7;8;9;10")
         self.assertEqual(model["default_materials"], f"{CLAY};{CLAY_RETRACT}")
@@ -293,7 +293,7 @@ class VendorStructureTests(unittest.TestCase):
         post = self.ini["print:*common*"]["post_process"]
         self.assertIn("validate_gcode.py", post)
         self.assertIn("C:\\\\Windows\\\\py.exe -3", post)
-        self.assertIn("C:\\\\Repos\\\\Prusa-Slicer-Print-Profiles\\\\Potterbot\\\\scripts\\\\", post)
+        self.assertIn("C:\\\\Repos\\\\Machine-profiles\\\\Potterbot\\\\scripts\\\\", post)
 
 
     def test_pause_macro_parks_without_homing(self) -> None:

@@ -22,7 +22,7 @@ Print is a single **0.20mm Hyper Speed** preset measured from this machine’s i
 
 ### Lab PC (required before slicing)
 
-Print profiles call two post-processing scripts by **absolute path**. Put this repo at `C:\Repos\Prusa-Slicer-Print-Profiles` (clone or copy the whole tree). Then install:
+Print profiles call two post-processing scripts by **absolute path**. Put this repo at `C:\Repos\Machine-profiles` (clone or copy the whole tree). Then install:
 
 1. **PrusaSlicer 2.9.6** (the version this bundle was tested against).
 2. **Python 3** from [python.org](https://www.python.org/downloads/) — ordinary CPython, GIL on. 3.13 and 3.14 both work. Do not use the free-threaded (no-GIL) build. No pip packages: the scripts use only the standard library.
@@ -31,8 +31,8 @@ Print profiles call two post-processing scripts by **absolute path**. Put this r
 Required scripts (already in the repo):
 
 ```text
-C:\Repos\Prusa-Slicer-Print-Profiles\Raise3D\scripts\ensure_m99123_first.py
-C:\Repos\Prusa-Slicer-Print-Profiles\Raise3D\scripts\validate_gcode.py
+C:\Repos\Machine-profiles\Raise3D\scripts\ensure_m99123_first.py
+C:\Repos\Machine-profiles\Raise3D\scripts\validate_gcode.py
 ```
 
 If the repo lives anywhere else, post-processing will fail until those two files are at that path. `compare_gcode.py` is optional and is not run by PrusaSlicer.

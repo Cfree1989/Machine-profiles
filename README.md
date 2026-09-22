@@ -16,7 +16,7 @@ Each `vendor/<Vendor>/` folder carries the PrusaSlicer plater and wizard assets 
 Clone or copy this repo to:
 
 ```text
-C:\Repos\Prusa-Slicer-Print-Profiles
+C:\Repos\Machine-profiles
 ```
 
 Raise3D print profiles call post-process scripts by that absolute path. If the folder lives anywhere else, edit `post_process` in `Raise3D/vendor/Raise3D.ini` (and the matching bundle) before slicing.
