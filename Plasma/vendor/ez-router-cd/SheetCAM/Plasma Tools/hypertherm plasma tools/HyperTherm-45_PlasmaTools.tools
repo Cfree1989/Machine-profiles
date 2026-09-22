@@ -1,0 +1,230 @@
+[Tool0]
+Type=3
+NameString=HT-45 {45 amp} 20ga Steel .036
+Comment=
+Number=1
+Diameter=0.889
+Plunge\ rate=1524
+Angle=0
+Flute\ length=0
+Ramp=9.99998
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=0
+Feed\ rate=9652
+[Tool0/Custom]
+presetVolts=115
+presetAmps=45
+dthcDelay=0
+[Tool1]
+Type=3
+NameString=HT-45 {45 amp} 16ga Steel .060
+Comment=
+Number=2
+Diameter=1.3716
+Plunge\ rate=1524
+Angle=0
+Flute\ length=0
+Ramp=9.99998
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=0
+Feed\ rate=8890
+[Tool1/Custom]
+presetVolts=116
+presetAmps=45
+dthcDelay=0
+[Tool2]
+Type=3
+NameString=HT-45 {45 amp} 14ga Steel .075
+Comment=
+Number=3
+Diameter=1.397
+Plunge\ rate=1524
+Angle=0
+Flute\ length=0
+Ramp=9.99998
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=0
+Feed\ rate=6400.8
+[Tool2/Custom]
+presetVolts=117
+presetAmps=45
+dthcDelay=0
+[Tool3]
+Type=3
+NameString=HT-45 {45 amp} 12ga Steel .105
+Comment=
+Number=4
+Diameter=1.5494
+Plunge\ rate=1524
+Angle=0
+Flute\ length=0
+Ramp=9.99998
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=0
+Feed\ rate=4343.4
+[Tool3/Custom]
+presetVolts=117
+presetAmps=45
+dthcDelay=0
+[Tool4]
+Type=3
+NameString=HT-45 {45 amp} 10ga Steel .135
+Comment=
+Number=5
+Diameter=1.5494
+Plunge\ rate=1524
+Angle=0
+Flute\ length=0
+Ramp=9.99998
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=0
+Feed\ rate=3200.4
+[Tool4/Custom]
+presetVolts=117
+presetAmps=45
+dthcDelay=0
+[Tool5]
+Type=3
+NameString=HT-45 {45 amp} 3/16 Steel .188
+Comment=
+Number=6
+Diameter=1.651
+Plunge\ rate=1524
+Angle=0
+Flute\ length=0
+Ramp=9.99998
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=0
+Feed\ rate=1955.8
+[Tool5/Custom]
+presetVolts=118
+presetAmps=45
+dthcDelay=0
+[Tool6]
+Type=3
+NameString=HT-45 {45 amp} 1/4 Steel .250
+Comment=
+Number=7
+Diameter=1.6764
+Plunge\ rate=1524
+Angle=0
+Flute\ length=0
+Ramp=9.99998
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=0
+Feed\ rate=1371.6
+[Tool6/Custom]
+presetVolts=120
+presetAmps=45
+dthcDelay=0
+[Tool7]
+Type=3
+NameString=HT-45 {45 amp}  3/8 Steel .375
+Comment=
+Number=8
+Diameter=1.6764
+Plunge\ rate=1524
+Angle=0
+Flute\ length=0
+Ramp=9.99998
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=0
+Feed\ rate=711.2
+[Tool7/Custom]
+presetVolts=122
+presetAmps=45
+dthcDelay=0
+[Tool8]
+Type=11
+NameString=Plate marker
+Comment=
+Number=100
+Diameter=0.0254
+Plunge\ rate=3810
+Angle=0.5
+Flute\ length=0.5
+Ramp=9.99998
+Z\ Increment=22.86
+Overall\ length=22.86
+Rampin=0
+Feed\ rate=2540
+[Tool9]
+Type=4
+NameString=C1 DTHC-OFF I=100%
+Comment=
+Number=268435457
+TextData=S10 (DTHC OFF I+100%)
+[Tool10]
+Type=4
+NameString=C2 DTHC-ON I=100%
+Comment=
+Number=268435458
+TextData=S20 (DTHC-ON I=100%)
+[Tool11]
+Type=4
+NameString=C3 DTHC-OFF I=90%
+Comment=
+Number=268435459
+TextData=S129 (DTHC-OFRF I=90%)
+[Tool12]
+Type=4
+NameString=C4 DTHC-OFF I=80%
+Comment=
+Number=268435460
+TextData=S18 (DTHC-OFF I=80%)
+[Tool13]
+Type=4
+NameString=C5 DTHC-OFF I=70%
+Comment=
+Number=268435461
+TextData=S17 (DTHC-OFF I=70%)
+[Tool14]
+Type=4
+NameString=C6 DTHC-OFF I=60%
+Comment=
+Number=268435462
+TextData=S16 (DTHC-OFF I=60%)
+[Tool15]
+Type=4
+NameString=C7 DTHC-OFF I=50%
+Comment=
+Number=268435463
+TextData=S15 (DTHC-OFF I=50%)
+[Tool16]
+Type=4
+NameString=C7 DTHC-ON I=90%
+Comment=
+Number=268435464
+TextData=S29 (DTHC-ON I=90%)
+[Tool17]
+Type=4
+NameString=C8 DTHC-ON I=80%
+Comment=
+Number=268435465
+TextData=S28 (DTHC-ON I=80%)
+[Tool18]
+Type=4
+NameString=C9 DTHC-ON I=70%
+Comment=
+Number=268435466
+TextData=S27 (DTHC-ON I=70%)
+[Tool19]
+Type=4
+NameString=C10 DTHC-ON I=60%
+Comment=
+Number=268435467
+TextData=S26 (DTHC-ON I=60%)
+[Tool20]
+Type=4
+NameString=C11 DTHC-ON I=50%
+Comment=
+Number=268435468
+TextData=S25 (DTHC-ON I=50%)

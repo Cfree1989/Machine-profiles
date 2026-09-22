@@ -1,0 +1,56 @@
+[Tool0]
+Type=3
+NameString=10GA mild steel
+Comment=
+Number=1
+Diameter=1.524
+Plunge\ rate=635
+Angle=0
+Flute\ length=0
+Ramp=10
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=1
+Feed\ rate=6350
+[Tool1]
+Type=3
+NameString=3/16 mild steel
+Comment=
+Number=2
+Diameter=1.8542
+Plunge\ rate=635
+Angle=0.2
+Flute\ length=0
+Ramp=10
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=1
+Feed\ rate=4699
+[Tool2]
+Type=3
+NameString=1/4 mild steel
+Comment=
+Number=3
+Diameter=1.905
+Plunge\ rate=635
+Angle=0.5
+Flute\ length=0
+Ramp=10
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=1
+Feed\ rate=3302
+[Tool3]
+Type=3
+NameString=3/8 mild steel
+Comment=
+Number=4
+Diameter=2.032
+Plunge\ rate=635
+Angle=0.5
+Flute\ length=0
+Ramp=10
+Z\ Increment=3.81
+Overall\ length=1.524
+Rampin=1
+Feed\ rate=1778

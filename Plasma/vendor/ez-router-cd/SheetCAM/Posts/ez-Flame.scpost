@@ -1,0 +1,171 @@
+function OnAbout(event)
+   ctrl = event:GetTextCtrl()
+   ctrl:AppendText("ez-Router Oxyfuel\n")
+   ctrl:AppendText("\n")
+   ctrl:AppendText("Modal G-codes and coordinates\n")
+   ctrl:AppendText("Comments enclosed with ( and )\n")
+   ctrl:AppendText("Incremental IJ - set in mach2\n")
+   ctrl:AppendText("Post variables:\n")
+end
+
+
+--- 12-2-2012
+
+
+
+function OnInit()
+
+   post.SetCommentChars ("()", "[]")  --make sure ( and ) characters do not appear in system text
+   post.Text (" (Filename: ", fileName, ")\n")
+   post.Text (" (Post processor: ", postName, ")\n")
+   post.Text (" (Date: ", date, ")\n")
+   if(scale == metric) then
+      post.Text (" G21 (Units: Metric)\n") --metric mode
+   else
+      post.Text (" G20 (Units: Inches)\n") --inch mode
+   end
+   post.Text (" G53 G90 G40\n")
+   minArcSize = 0.01 --arcs smaller than this are converted to moves
+
+   dist = 9999999
+-- refdistance = 10* scale
+--Put your switch offset value here
+--   switchoffset =0.0
+   lastz = 0
+end
+
+function OnNewLine()
+   post.Text ("N")
+   post.Number (lineNumber, "0000")
+   lineNumber = lineNumber + 10
+end
+
+
+function OnFinish()
+   endZ = safeZ
+   OnRapid()
+   endX = 0
+   endY = 0
+   OnRapid()
+   post.Text (" M05 M30\n")
+end
+
+function OnRapid()
+   dist = dist + math.hypot(endX-currentX , endY-currentY)
+   post.ModalText (" G00")
+   post.ModalNumber (" X", endX * scale, "0.0000")
+   post.ModalNumber (" Y", endY * scale, "0.0000")
+   post.ModalNumber (" Z", endZ * scale, "0.0000")
+   post.Eol()
+end
+
+function OnMove()
+   dist = dist + math.hypot(endX-currentX , endY-currentY)
+   post.ModalText (" G01")
+   post.ModalNumber (" X", endX * scale, "0.0000")
+   post.ModalNumber (" Y", endY * scale, "0.0000")
+   post.ModalNumber (" Z", endZ * scale, "0.0000")
+   post.ModalNumber (" F", feedRate * scale, "0.###")
+   post.Eol()
+end
+
+function OnArc()
+   dist = dist + math.hypot(endX-currentX , endY-currentY)
+   if(arcAngle <0) then
+      post.ModalText (" G03")
+   else
+      post.ModalText (" G02")
+   end
+   post.ModalNumber (" X", endX * scale, "0.0000")
+   post.ModalNumber (" Y", endY * scale, "0.0000")
+   post.ModalNumber (" Z", endZ * scale, "0.0000")
+   post.Text (" I")
+   post.Number ((arcCentreX - currentX) * scale, "0.0000")
+   post.Text (" J")
+   post.Number ((arcCentreY - currentY) * scale, "0.0000")
+   post.ModalNumber (" F", feedRate * scale, "0.0###")
+   post.Eol()
+end
+
+
+function OnPenDown()
+--   if(dist >= (refdistance/scale)) then
+--      dist = 0
+--      modaltext (" G00")
+--      text(" Z")
+--      number (pierceheight  * scale, "0.0000")
+--      eol()
+ --     post.ModalText(" G28.1 Z")
+ --     post.Number(3 * scale, "0.00")
+ --     post.Eol()
+ --     post.ModalText(" G92 Z0.0\n")
+ --     post.ModalText (" G00")
+ --     post.Text(" Z")
+ --     post.Number (switchoffset, "0.0000")
+ --     post.Eol()
+ --     post.ModalText(" G92 Z0.0\n")
+ --     post.ModalText (" G00")
+ --     post.Text(" Z")
+ --     post.Number (pierceHeight  * scale, "0.0000")
+ --     post.Eol()
+ --  else
+ --  if
+      post.ModalText (" G00")
+      post.Text(" Z")
+      post.Number (pierceHeight  * scale, "0.0000")
+      post.Eol()
+ --  end
+   if (preheat > 0) then
+      post.Text ("\n G04 P")
+      post.Number (preheat,"0.###")
+      post.Eol()
+   end
+   post.Text ("\n M03\n")
+   if (pierceDelay > 0) then
+      post.Text (" G04 P")
+      post.Number (pierceDelay,"0.###")
+      post.Eol()
+   end
+end
+
+
+function OnPenUp()
+   post.Text (" M05\n")
+   if (endDelay > 0) then
+      post.Text (" G04 P")
+      post.Number (endDelay,"0.###")
+      post.Eol()
+   end
+end
+
+
+function OnNewOperation()
+   post.Text (" (Process: ", operationName, ")\n")
+   if (plungeRate <= 0) then
+      post.Warning("WARNING: Plunge rate is zero")
+   end
+   if (feedRate <= 0) then
+      post.Warning("WARNING: Feed rate is zero")
+   end
+end
+
+--function OnToolChange()
+--   post.Text (" M06 T")
+--   post.Number (tool, "0")
+--   post.ModalNumber(" F",feedRate * scale,"0.#")
+--  post.Text ("  (", toolName, ")\n")
+--end
+
+function OnNewPart()
+   post.Text(" (Part: ",partName,")\n");
+end
+
+function OnDrill()
+   OnRapid()
+   OnPenDown()
+   endZ = drillZ
+   OnMove()
+   OnPenUp()
+   endZ = safeZ
+   OnRapid()
+end

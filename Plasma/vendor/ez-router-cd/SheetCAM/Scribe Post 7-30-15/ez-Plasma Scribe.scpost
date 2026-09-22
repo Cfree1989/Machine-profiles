@@ -1,0 +1,434 @@
+--************************************************
+--*** Set these values up to suit your machine ***
+--************************************************
+
+--Set the X axis backlash amount in MILLIMETRES
+backlashX = 0
+
+--Set the Y axis backlash amount in MILLIMETRES
+backlashY = 0
+
+--this is the distance between each torch reference in MILLIMETRES
+--set it to -1 if you never want to reference
+refDistance = 0
+
+--this is the reference feed rate in mm/min
+refFeed = 500
+
+--Put your switch offset value here in MILLIMETRES
+switchOffset = 1.5
+
+--Marker X,Y,Z offsets in MILLIMETRES. Do not use inches here even if you want inch code
+--Use the special code 'nil' on the Z axis to disable it.
+--In that case no Z values will be output at all while scribing.
+--e.g markerZ = nil
+markerX = 79.000
+markerY = 18.7198
+markerZ = 70.2818
+markersafeZ = 12.7
+
+--marker axis. Leave this as nil if the marker is fixed to the same axis as the torch
+--markerAxis = "A"
+markerAxis = nil
+
+--If this value is set to true then use G28 (home) for the Z reference
+--Set it to false for G31 probe
+refHome = true
+
+--The cutter will slow down for corners and turn off THC below this radius
+slowRadius = 0
+
+--Minimum slow down speed.
+--This is a scale factor. For instance 0.5 = 50% of the current feed rate
+slowPercent = 0.4
+
+--THC on and off codes. Use nil if you don't want THC control e.g:
+-- thcOnCode = nil
+-- thcOffCode = nil
+
+--here is another example that use M667 and M666
+--thcOnCode = " M667"
+--thcOffCode = " M666"
+
+thcOnCode = nil
+thcOffCode = nil
+
+
+--Torch on code
+torchOn = " M03"
+--Torch off code
+torchOff = " M05"
+
+--Marker on code
+markerOn = " M08"
+--Marker off code
+markerOff = " M09"
+
+
+--************************************************
+--***           End of settings                ***
+--************************************************
+
+
+function OnAbout(event)
+   ctrl = event:GetTextCtrl()
+   ctrl:AppendText("plasma post processor for ez-Plasma Scribe\n")
+   ctrl:AppendText("Includes backlash compensation and punch marker/scriber\n")
+   ctrl:AppendText("\n")
+   ctrl:AppendText("Modal G-codes and coordinates\n")
+   ctrl:AppendText("Comments enclosed with ( and )\n")
+   ctrl:AppendText("M03/M05 turn the torch on/off\n")
+   ctrl:AppendText("M08/M09 turn the engraver on/off\n")
+   ctrl:AppendText("Incremental IJ - set in mach2\n")
+   ctrl:AppendText("The torch is referenced at cut start and every 500mm of movement thereafter\n")
+   ctrl:AppendText("Designed for use with Mach3 and ez-Plasma-THC and Floating head or Ohmic sensing\n")
+   ctrl:AppendText("Post variables:\n")
+   ctrl:AppendText("refDistance - set the distance between each reference\n")
+   ctrl:AppendText("refFeed - set the feed rate when referencing\n")
+   ctrl:AppendText("switchOffset - set your net switch offset amount \n")
+   ctrl:AppendText("Marker uses any tool number\n")
+   ctrl:AppendText("slowRadius - slow down below this radius\n")
+   ctrl:AppendText("slowPercent - minimum percentage to slow down\n")
+end
+
+
+
+--   created 1/1/06
+--   Based on plasma1.post
+
+
+--  Modified 21/6/2010
+--  added option for 'nil' plate marker z
+--  Added support for plate marker tool type as well as tool number based plate marker
+
+-- Modified 4/11/2010
+-- Added: Reference the torch on the first pen down if the plate marker is the first tool used.
+
+
+post.DefineVariable("refDistance",sc.unitLINEAR,-1,1e17)
+post.DefineVariable("refFeed",sc.unitFEED,0,1e17)
+post.DefineVariable("switchOffset",sc.unitLINEAR,-1e17,1e17)
+post.DefineVariable("slowRadius",sc.unitLINEAR,-1e17,1e17)
+post.DefineVariable("slowPercent",sc.unitPERCENT,-1e17,1e17)
+
+function OnInit()
+
+   offX = 0
+   offY = 0
+   offZ = 0
+
+   post.SetCommentChars ("()", "[]")  --make sure ( and ) characters do not appear in system text
+   post.Text (" (Filename: ", fileName, ")\n")
+   post.Text (" (Post processor: ", postName, ")\n")
+   post.Text (" (Date: ", date, ")\n")
+   if(scale == metric) then
+      post.Text (" G21 (Units: Metric)\n") --metric mode
+   else
+      post.Text (" G20 (Units: Inches)\n") --inch mode
+   end
+   post.Text (" G53 G90 G40\n")
+   minArcSize = 0.2 --arcs smaller than this are converted to moves
+   firstRef = refDistance >=0
+   currentZAxis = " Z"
+
+   dist = 9999999
+   lastz = 0
+   thcstate = 1
+   ThcOff()
+   xPlus = false
+   yPlus = false
+   cX = 0
+   cY = 0
+end
+
+function OnNewLine()
+   post.Text ("N")
+   post.Number (lineNumber, "0000")
+   lineNumber = lineNumber + 10
+end
+
+
+function OnFinish()
+   endZ = safeZ
+   OnRapid()
+   endX = 0
+   endY = 0
+   offX = 0
+   offY = 0
+   offZ = 0
+   OnRapid()
+   post.Text (torchOff .. " M30\n")
+end
+
+function CheckBacklash(mode)
+   post.ModalText (mode)
+   if(endX > 1e17 or endY > 1e17) then return end
+   local diff = endX - cX
+   local changed = false
+   if(diff > 0.001 and xPlus == false) then
+      changed = true
+      xPlus = true
+   elseif(diff < -0.001 and xPlus == true) then
+      changed = true
+      xPlus = false
+   end
+
+   diff = endY - cY
+   if(diff > 0.001 and yPlus == false) then
+      changed = true
+      yPlus = true
+   elseif(diff < -0.001 and yPlus == true) then
+      changed = true
+      yPlus = false
+   end
+
+   cX = endX
+   cY = endY
+
+   if(changed) then
+      local moved = false
+      if (xPlus and backlashX ~=0) then
+         currentX = currentX + backlashX
+         post.ModalNumber (" X", currentX * scale, "0.0000")
+         moved = true
+      end
+      if (yPlus and backlashY ~=0) then
+         currentY = currentY + backlashY
+         post.ModalNumber (" Y", currentY * scale, "0.0000")
+         moved = true
+      end
+      if(moved) then
+         post.ModalNumber (" F", feedRate * scale, "0.0###")
+         post.Eol()
+      end
+   end
+   if (xPlus) then
+      endX = endX + backlashX
+   end
+   if (yPlus) then
+      endY = endY + backlashY
+   end
+
+end
+
+function OnRapid()
+   if(endX > 1e17 and endY > 1e17) then return end
+   local len = math.hypot((endX + offX)-currentX , (endY + offY)-currentY)
+   dist = dist + len
+   CheckBacklash(" G00")
+   post.ModalNumber (" X", (endX + offX) * scale, "0.0000")
+   post.ModalNumber (" Y", (endY + offY) * scale, "0.0000")
+   if(offZ and firstRef == false) then
+      post.ModalNumber (currentZAxis, (endZ + offZ) * scale, "0.0000")
+   end
+   post.Eol()
+end
+
+function OnMove()
+   local len = math.hypot(endX - currentX , endY - currentY)
+   dist = dist + len
+   if(len > slowRadius) then
+      ThcOn()
+   end
+   CheckBacklash(" G01")
+   post.ModalNumber (" X", (endX + offX) * scale, "0.0000")
+   post.ModalNumber (" Y", (endY + offY) * scale, "0.0000")
+   if(offZ) then
+      post.ModalNumber (currentZAxis, (endZ + offZ) * scale, "0.0000")
+   end
+   post.ModalNumber (" F", feedRate * scale, "0.0###")
+   post.Eol()
+end
+
+function OnArc()
+   local radius = math.hypot(currentX - arcCentreX, currentY - arcCentreY)
+   dist = dist + radius * math.abs(arcAngle)
+
+   if (radius < slowRadius) and (math.abs(arcAngle) > 0.5) then
+      feed = (radius / slowRadius)
+      if(feed < slowPercent) then
+         feed = slowPercent
+      end
+      feed = feed * feedRate
+      ThcOff()
+   else
+      feed = feedRate
+      ThcOn()
+   end
+   if(arcAngle <0) then
+      post.ModalText (" G03")
+   else
+      post.ModalText (" G02")
+   end
+   post.ModalNumber (" X", (endX + offX) * scale, "0.0000")
+   post.ModalNumber (" Y", (endY + offY) * scale, "0.0000")
+   if(offZ) then
+      post.ModalNumber (currentZAxis, (endZ + offZ) * scale, "0.0000")
+   end
+   post.Text (" I")
+   post.Number ((arcCentreX - currentX) * scale, "0.0000")
+   post.Text (" J")
+   post.Number ((arcCentreY - currentY) * scale, "0.0000")
+   post.ModalNumber (" F", feed * scale, "0.0###")
+   post.Eol()
+end
+
+function OnArc()
+  post.ArcAsMoves(0.1)
+end
+
+function ThcOff()
+   if(not thcOffCode) then return end
+   if(thcstate ==1) then
+      thcstate = 0
+      post.Text(thcOffCode)
+      post.Text(" (THC off)\n");
+   end
+end
+
+function ThcOn()
+   if(not thcOnCode) then return end
+   if(toolClass == "MarkerTool") or tool > 99 then return end
+   if(thcstate ==0) then
+      thcstate = 1
+      post.Text(thcOnCode)
+      post.Text(" (THC on)\n");
+      return
+   end
+   if(thcstate == 2) then
+      thcstate = 0
+   end
+end
+
+
+function OnPenDown()
+   if(toolClass == "MarkerTool") then
+      if (firstRef) then
+         Reference()
+         post.ModalText (" G00")
+         post.Text(" Z")
+         offZ = markerZ
+         post.Number ((markersafeZ + offZ)* scale, "0.0000")
+         post.Eol()
+         offX = markerX
+         offY = markerY
+         offZ = markerZ
+         post.ModalNumber (" X", (currentX + offX) * scale, "0.0000")
+         post.ModalNumber (" Y", (currentY + offY) * scale, "0.0000")
+         post.Eol()
+         post.Text(markerOn .. "\n")
+         post.Eol()
+      end
+      if (offZ) then
+         post.ModalNumber (currentZAxis, (endZ + offZ)  * scale, "0.0000")
+         post.Eol()
+      end
+      --post.Text(markerOn .. "\n")
+   else
+      if(dist >= refDistance and refDistance >=0) then
+         dist = 0
+         Reference();
+         post.ModalText (" G00")
+         post.NonModalNumber (currentZAxis, (pierceHeight + offZ)  * scale, "0.0000")
+         post.Eol()
+      end
+      if (preheat > 0) then
+         post.Text ("\n G04 P")
+         post.Number (preheat,"0.###")
+         post.Eol()
+      end
+      post.Text ("\n" .. torchOn .. "\n")
+   end
+   if (pierceDelay > 0) then
+      post.Text (" G04 P")
+      post.Number (pierceDelay,"0.###")
+      post.Eol()
+   end
+--   thcstate = 2 --leave THC off for plunge move
+end
+
+
+function Reference()
+   firstRef = false
+   if(refDistance < 0) then return end
+   if (refHome) then
+      post.ModalText(" G28.1 Z")
+      local zp = 30
+      if(zp > safeZ) then
+         zp = safeZ
+      end
+      post.Number(zp * scale, "0.00")
+   else
+      post.ModalText(" G31 Z -100")
+   end
+   post.ModalNumber (" F", refFeed * scale, "0.0###")
+   post.Eol()
+   post.ModalText(" G92 Z0.0\n")
+   post.ModalText (" G00")
+   post.Text(" Z")
+   post.Number (switchOffset * scale, "0.0000")
+   post.Eol()
+   post.ModalText(" G92 Z0.0\n")
+end
+
+function OnPenUp()
+   if(toolClass == "MarkerTool") then
+      --post.Text(markerOff .. "\n")
+   else
+      post.Text (torchOff .. "\n")
+   end
+   if (endDelay > 0) then
+      post.Text (" G04 P")
+      post.Number (endDelay,"0.###")
+      post.Eol()
+   end
+end
+
+
+function OnNewOperation()
+   post.Text (" (Operation: ", operationName, ")\n")
+end
+
+function OnToolChange()
+    if (toolClass == "MarkerTool"  or tool > 99 ) then
+         ThcOff()
+         if(markerAxis and markerAxis ~= currentZAxis) then
+            endZ = safeZ
+            post.ModalText(" G00")
+            post.ModalNumber (currentZAxis, (endZ + offZ) * scale, "0.0000")
+            post.Eol()
+            currentZAxis = " " .. markerAxis
+         end
+         if(firstRef ~= true) then
+            offX = markerX
+            offY = markerY
+            offZ = markerZ
+         end
+    else
+         post.Text(markerOff .. "\n")
+         if(markerAxis and markerAxis == currentZAxis) then
+            endZ = safeZ
+            OnRapid()
+            currentZAxis = " Z"
+         end
+         offX = 0
+         offY = 0
+         offZ = 0
+    end
+end
+
+function OnNewPart()
+   post.Text(" (Part: ",partName,")\n");
+end
+
+function OnDrill()
+   OnRapid()
+   currentX = endX
+   currentY = endY
+   OnPenDown()
+   endZ = drillZ
+   OnMove()
+   OnPenUp()
+   endZ = safeZ
+   OnRapid()
+end

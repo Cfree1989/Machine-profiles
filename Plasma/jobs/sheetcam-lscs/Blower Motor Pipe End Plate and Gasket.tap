@@ -1,0 +1,10 @@
+N0010 (Filename: Blower Motor Pipe End Plate and Gasket.tap)
+N0020 (Post processor: LSCS plasma THC with scriber and backlash compensation R1.10.scpost)
+N0030 (Date: 3/23/2022)
+N0040 G20 (Units: Inches)
+N0050 F1
+N0060 G53 G90 G40
+N0070 M09
+N0080 G00 X0.0000 Y0.0000
+N0090 X0.0000 Y0.0000
+N0100 M05 M30

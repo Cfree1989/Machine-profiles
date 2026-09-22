@@ -1,0 +1,584 @@
+[Cutoff]
+BelongsTo=-1
+Climb cut=0
+CodeSnip=-1
+Comment=
+Contour method=2
+Cut depth=0
+Cut direction=0.5
+Cutting rules=0
+Edge overlap=5.001259999999999
+Enabled=0
+Feed rate=1.00076
+Finish allowance=0
+Grid size=49.999899999999997
+ID=-1
+Layer=
+Lead in=-1
+Lead in type=0
+Lead out=-1
+Lead out type=0
+Leadins on open paths=0
+Length=1.00076
+Maximum X size=2000.00108
+Maximum Y size=2000.00108
+Minimum X size=499.99899999999997
+Minimum Y size=499.99899999999997
+Name=
+Offset open paths=0
+Optimisation=1
+Path rules=
+Plunge rate=99.999799999999993
+Remnants must be rectangular=0
+Reverse open paths=0
+Start depth=0
+Start position=0
+Tool=1
+Type=RemnantOperation
+[Cutoff/Custom]
+[Misc]
+Count=1
+FileVersion=1003
+optBias=0.3875
+Optimisation=1
+Template=0
+[OpOrder]
+[Part 0]
+Angle=0
+copyOf=-1
+DrawingFile=E:\DXF\dusty.dxf
+enabled=1
+HRef=0
+Locked=0
+name=dusty
+VRef=0
+XPos=53.974999999999987
+YPos=28.575000000000003
+[Part 0/GroupSources]
+[Part 0/Operation0]
+Angle threshold=0.9
+BelongsTo=-1
+CodeSnip=-1
+Comment=
+Contour method=2
+Cut depth=0
+Cut direction=0.3875
+Cutting rules=2
+Enabled=1
+Feed rate=1270
+Finish allowance=0
+ID=0
+Layer=LAYER_1
+Lead in=2.54
+Lead in type=0
+Lead out=2.54
+Lead out type=0
+Leadins on open paths=0
+Length=1.00076
+Loop corners=0
+Loop size=1
+Max chain length=0
+Minimise thermal distortion=0
+Name=No Offset, LAYER_1, T100: Scribe
+Offset open paths=0
+Optimisation=1
+Overcut=0
+Path rules=
+Plunge rate=99.999799999999993
+Reverse cut direction=1
+Reverse open paths=0
+Start depth=0
+Start position=4
+Tool=100
+Type=JetOperation
+[Part 0/Operation0/Custom]
+[Part 0/Operation1]
+Angle threshold=0.9
+BelongsTo=-1
+CodeSnip=-1
+Comment=
+Contour method=1
+Cut depth=0
+Cut direction=0.3875
+Cutting rules=2
+Enabled=1
+Feed rate=2540
+Finish allowance=0
+ID=1
+Layer=cutout
+Lead in=6.35
+Lead in type=2
+Lead out=2.54
+Lead out type=2
+Leadins on open paths=0
+Length=1.00076
+Loop corners=0
+Loop size=1
+Max chain length=0
+Minimise thermal distortion=0
+Name=Outside Offset, cutout, T19: HT-85 {85 amp} 1/4 Steel
+Offset open paths=0
+Optimisation=1
+Overcut=0
+Path rules=
+Plunge rate=99.999799999999993
+Reverse cut direction=1
+Reverse open paths=0
+Start depth=0
+Start position=4
+Tool=19
+Type=JetOperation
+[Part 0/Operation1/Custom]
+[pathRules]
+GlobalRule=-1
+[Table]
+MaxHeight=1000
+Origin=6
+RapidSpeed=2000
+tableOrigin=6
+TableX1=0
+TableX2=1219.1999999999998
+TableY1=0
+TableY2=1219.1999999999998
+ToolTime=0
+X1=0
+X2=1219.1999999999998
+Y1=0
+Y2=1219.1999999999998
+[Tool0]
+Comment=
+Cut height=0.508
+Feed rate=8890
+Kerf width=0.889
+Name=HT-85 {45 amp} 26ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=2.032
+Pierce type=0
+Plunge rate=1524
+Tool number=1
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool0/Custom]
+[Tool1]
+Comment=
+Cut height=0.508
+Feed rate=8890
+Kerf width=0.889
+Name=HT-85 {45 amp} 22ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=2.032
+Pierce type=0
+Plunge rate=1524
+Tool number=2
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool1/Custom]
+[Tool10]
+Comment=
+Cut height=1.524
+Feed rate=4826
+Kerf width=1.651
+Name=HT-85 {65 amp} 10ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=11
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool10/Custom]
+[Tool11]
+Comment=
+Cut height=1.524
+Feed rate=3556
+Kerf width=1.7272
+Name=HT-85 {65 amp} 3/16 Steel
+Pause at end of cut=0
+Pierce delay=0.2
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=12
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool11/Custom]
+[Tool12]
+Comment=
+Cut height=1.524
+Feed rate=2286
+Kerf width=1.778
+Name=HT-85 {65 amp} 1/4 Steel
+Pause at end of cut=0
+Pierce delay=0.5
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=13
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool12/Custom]
+[Tool13]
+Comment=
+Cut height=1.524
+Feed rate=1143
+Kerf width=1.9304
+Name=HT-85 {65 amp} 3/8 Steel
+Pause at end of cut=0
+Pierce delay=0.7
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=14
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool13/Custom]
+[Tool14]
+Comment=
+Cut height=1.524
+Feed rate=762
+Kerf width=2.2352
+Name=HT-85 {65 amp} 1/2 Steel
+Pause at end of cut=0
+Pierce delay=1.2
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=15
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool14/Custom]
+[Tool15]
+Comment=
+Cut height=1.524
+Feed rate=584.19999999999993
+Kerf width=2.286
+Name=HT-85 {65 amp} 5/8 Steel
+Pause at end of cut=0
+Pierce delay=2
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=16
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool15/Custom]
+[Tool16]
+Comment=
+Cut height=1.524
+Feed rate=6350
+Kerf width=1.7272
+Name=HT-85 {85 amp} 10ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=17
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool16/Custom]
+[Tool17]
+Comment=
+Cut height=1.524
+Feed rate=4699
+Kerf width=1.8034
+Name=HT-85 {85 amp} 3/16 Steel
+Pause at end of cut=0
+Pierce delay=0.2
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=18
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool17/Custom]
+[Tool18]
+Comment=
+Cut height=1.524
+Feed rate=3302
+Kerf width=1.8542
+Name=HT-85 {85 amp} 1/4 Steel
+Pause at end of cut=0
+Pierce delay=0.5
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=19
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool18/Custom]
+[Tool19]
+Comment=
+Cut height=1.524
+Feed rate=1778
+Kerf width=1.9812
+Name=HT-85 {85 amp} 3/8 Steel
+Pause at end of cut=0
+Pierce delay=0.5
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=20
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool19/Custom]
+[Tool2]
+Comment=
+Cut height=0.508
+Feed rate=8890
+Kerf width=1.3716
+Name=HT-85 {45 amp} 18ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=2.032
+Pierce type=0
+Plunge rate=1524
+Tool number=3
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool2/Custom]
+[Tool20]
+Comment=
+Cut height=1.524
+Feed rate=1143
+Kerf width=2.286
+Name=HT-85 {85 amp} 1/2 Steel
+Pause at end of cut=0
+Pierce delay=0.5
+Pierce height=4.571999999999999
+Pierce type=0
+Plunge rate=1524
+Tool number=21
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool20/Custom]
+[Tool21]
+Comment=
+Cut height=1.524
+Feed rate=889
+Kerf width=2.413
+Name=HT-85 {85 amp} 5/8 Steel
+Pause at end of cut=0
+Pierce delay=1
+Pierce height=4.571999999999999
+Pierce type=0
+Plunge rate=1524
+Tool number=22
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool21/Custom]
+[Tool22]
+Comment=
+Cut height=1.524
+Feed rate=609.59999999999991
+Kerf width=2.54
+Name=HT-85 {85 amp} 3/4 Steel
+Pause at end of cut=0
+Pierce delay=1.5
+Pierce height=6.095999999999999
+Pierce type=0
+Plunge rate=1524
+Tool number=23
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool22/Custom]
+[Tool23]
+Comment=
+Cut height=0
+Diameter=0.254
+Feed rate=1270
+Name=Scribe
+Pause at end of cut=0
+Pierce type=0
+Plunge rate=99.999799999999993
+Start delay=0
+Tool number=100
+Type=MarkerTool
+Wiggle length=9.999979999999999
+[Tool23/Custom]
+[Tool3]
+Comment=
+Cut height=0.508
+Feed rate=8890
+Kerf width=1.3716
+Name=HT-85 {45 amp} 16ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=2.032
+Pierce type=0
+Plunge rate=1524
+Tool number=4
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool3/Custom]
+[Tool4]
+Comment=
+Cut height=1.524
+Feed rate=5715
+Kerf width=1.397
+Name=HT-85 {45 amp} 14ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=5
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool4/Custom]
+[Tool5]
+Comment=
+Cut height=1.524
+Feed rate=4826
+Kerf width=1.397
+Name=HT-85 {45 amp} 12ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=6
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool5/Custom]
+[Tool6]
+Comment=
+Cut height=1.524
+Feed rate=2540
+Kerf width=1.5494
+Name=HT-85 {45 amp} 10ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=7
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool6/Custom]
+[Tool7]
+Comment=
+Cut height=1.524
+Feed rate=1778
+Kerf width=1.651
+Name=HT-85 {45 amp} 3/16 Steel
+Pause at end of cut=0
+Pierce delay=0.5
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=8
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool7/Custom]
+[Tool8]
+Comment=
+Cut height=1.524
+Feed rate=1219.1999999999998
+Kerf width=1.6764
+Name=HT-85 {45 amp} 1/4 Steel
+Pause at end of cut=0
+Pierce delay=0.6
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=9
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool8/Custom]
+[Tool9]
+Comment=
+Cut height=1.524
+Feed rate=6604
+Kerf width=1.5748
+Name=HT-85 {65amp} 16ga Steel
+Pause at end of cut=0
+Pierce delay=0
+Pierce height=3.81
+Pierce type=0
+Plunge rate=1524
+Tool number=10
+Type=PlasmaTool
+Wiggle length=9.999979999999999
+[Tool9/Custom]
+[ToolChange]
+BeforeCode=
+Code=
+noSafeZ=0
+UseX=0
+UseY=0
+UseZ=0
+X=0
+Y=0
+Z=0
+[Variables]
+[Work]
+Bottom=0
+Clearance=25.399999999999999
+isPolygon=0
+Notes=
+Origin=6
+ParkUseX=0
+ParkUseY=0
+ParkUseZ=0
+ParkX=0
+ParkY=0
+ParkZ=0
+PlungeSafety=25.399999999999999
+polyLayer=LAYER_1
+polyPart=0
+Thickness=6.35
+X1=0
+X2=1219.1999999999998
+Y1=0
+Y2=1219.1999999999998
+[Work/keepout]
+Clamp Clearance Height=RapidClearance
+Corner 1X=0
+Corner 1Y=0
+Corner 2X=0
+Corner 2Y=0
+Function=0
+Inside=1
+layer=LAYER_1
+part=0
+[BinaryDataStart]%   ¦¸.·]mX@è¢‚³ÆY@ c cutout          dfffffI@hfffff9@   dfffffI@hfffff9À   ¦¸.·]mXÀè¢‚³ÆYÀ   -DTû!	@	    àý”é 
+   ˜©Gè              dfffffI@hfffff9À   ffffffIÀhfffff9À   ¦¸.·]mXÀè¢‚³ÆYÀ   -DTû!ù¿	    àý”é 
+   ˜©Gè              ffffffIÀhfffff9À   ffffffIÀhfffff9@   ¦¸.·]mXÀè¢‚³ÆYÀ           	    àý”é 
+   ˜©Gè              ffffffIÀhfffff9@   dfffffI@hfffff9@   ¦¸.·]mXÀè¢‚³ÆYÀ   -DTû!ù?	    àý”é 
+   ˜©Gè            c LAYER_1          ¬¼±ŽAÀ>þ{­l(@   ôï?O=À`Î?„¢@   »»êWœAÀÀ}-)Ê(@   ŸU@íø?	   €$ lq’?
+   ôZÛH—±@             ôï?O=À`Î?„¢@   ôï?O=ÀðºŠ­¯€À   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ   -DTû!	@	        
+   ˜©Gè              ôï?O=ÀðºŠ­¯€À   ³®> AÀ8>þ{­l(À   Ù† å‹AÀPÕnºj­À   ÂÉäQ«ù?	   €:îbù?
+   É‘g.@             ³®> AÀ8>þ{­l(À   73333£DÀ8>þ{­l(À   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ   -DTû!ù¿	        
+   ˜©Gè              73333£DÀ8>þ{­l(À   73333£DÀ>þ{­l(@   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ           	        
+   ˜©Gè              73333£DÀ>þ{­l(@   ¬¼±ŽAÀ>þ{­l(@   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ   -DTû!ù?	        
+   ˜©Gè            c LAYER_1          0¥FeÃì&À>þ{­l(@   0¥FeÃì&À0>þ{­lÀ   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ   -DTû!	@	     
+   
+   ˜©Gè              0¥FeÃì&À0>þ{­lÀ   Ü}ëþÌÚ1À´f
+a(À   EY°X1ÀÀ…$LÀ   HÐˆÓû?	   PRb£#Šø?
+   Î[U_@             Ü}ëþÌÚ1À´f
+a(À   ¤q¢p¸¬7À0>þ{­lÀ   °¹’Ù1À M¯ânÀ   sbS,kÎù?	   /×’ 	À
+   Z‰Æ!T@             ¤q¢p¸¬7À0>þ{­lÀ   ¤q¢p¸¬7À>þ{­l(@   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ           	     
+   
+   ˜©Gè            c LAYER_1          ð1@+VÀÐ›'!¯{À    ¨ßØmàÓ¿¸ôÑm(À    ŒV¹¶}Í¿à'ôZmÀ   ÇFÀÍŽù¿	   àBâ—}ø¿
+   ªÁz^o@              ¨ßØmàÓ¿¸ôÑm(À    À»RJ~¿8>þ{­l(À   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ   …[~Å×ù?	        
+       è               À»RJ~¿8>þ{­l(À   P kþÅh@`uäHÍÀ    ˜XVM´?rv»d¼À   ÿlº§ø¿	   Mk¥N	À
+   ARqi™@             P kþÅh@`uäHÍÀ   €‘g6J@ÀbÁ”j
+ö¿    ð»á.»Ü?ÀF~P70À   'ð\ë–¡ð¿	   Nï¿Eú?
+   Ï~ãéÊ«@             €‘g6J@ÀbÁ”j
+ö¿   @¬5cy‘ÀÀõ¾Ý$
+@   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ   Ñ¢æ^î¿	        
+       è              @¬5cy‘ÀÀõ¾Ý$
+@   `´xú“Ààj"`n$@    Ú„ÇëóÈ? Ñ”SFþ@   ~%Öyïø?	   ˜„7ŒòÀ
+   ´+iFÀù@             `´xú“Ààj"`n$@    \‰©ån@è\Çñ&@    0¢¸È®?@\£Ä@   ³>¡N™‡ù?	   š}m}Cjî¿
+   #\³äÖ@              \‰©ån@è\Çñ&@   à”§	°@¸Vß\%@   ÿÿÿÿ*ˆA~è¢‚³ÆYÀ   Ö[ªÒk@	        
+       è              à”§	°@¸Vß\%@   Ð¶ó§ª@04>c4;@    ;J×? M—a‚½@   »nÈ4E8ë?	   àŸäîkðç?
+   =K	…;@           c LAYER_1          ØSÛ7Dô&@>þ{­l(@   øÈìÙx°7@>þ{­l(@   ¦¸.·]mXÀè¢‚³ÆYÀ   -DTû!ù?	        
+       è            c LAYER_1          t9ízM•1@°ÿ7c¬b(@   t9ízM•1@8>þ{­l(À   ¦¸.·]mXÀè¢‚³ÆYÀ   -DTû!	@	        
+       è            c LAYER_1          XGg¨=@>þ{­l(@   lk³ƒ•A@      (½   ¦¸.·]mXÀè¢‚³ÆYÀ   ´õ—snl@	        
+       è              lk³ƒ•A@      (½   03333£D@>þ{­l(@   ¦¸.·]mXÀè¢‚³ÆYÀ   G»ag¬Ý?	        
+       è            c LAYER_1          lk³ƒ•A@      (½   lk³ƒ•A@8>þ{­l(À   ¦¸.·]mXÀè¢‚³ÆYÀ   -DTû!	@	        
+       è              R¸…ëQ@   R¸…ëQ@                 ÿÿÿÿ     ¬¼±ŽAÀ  >þ{­l(@      #    $                    R¸…ëQ@   R¸…ëQ@                 ÿÿÿÿ     0¥FeÃì&À  >þ{­l(@      #    $                    R¸…ëQ@   R¸…ëQ@                 ÿÿÿÿ     ð1@+VÀ  Ð›'!¯{À       #    $                    R¸…ëQ@   R¸…ëQ@                 ÿÿÿÿ     ØSÛ7Dô&@  >þ{­l(@      #    $                    R¸…ëQ@   R¸…ëQ@                 ÿÿÿÿ     t9ízM•1@  °ÿ7c¬b(@      #    $                    R¸…ëQ@   R¸…ëQ@                 ÿÿÿÿ     XGg¨=@  >þ{­l(@      #    $                    R¸…ëQ@   R¸…ëQ@                 ÿÿÿÿ     lk³ƒ•A@        (½      #    $                    ffffff@   R¸…ëQ@               ÿÿÿÿ     dfffffI@  hfffff9@       #    $                    

@@ -1,0 +1,23 @@
+To run Mach3 with VISTA
+
+Please follow these step exactly as stated!!!!!!
+
+1) First, install Mach3. 
+
+2) Now you need to run the memoryoverride file.
+ (just double click the file). 
+
+3) Now you need to go to the C:\Mach3 folder, (or wherever 
+you installed Mach3) and right click drivertest.exe , select 
+"Run as Adminstrator.". It should tell you to reboot. 
+(do not skip the reboot) 
+
+4) Try the drivertest.again, and it should run succesfully. 
+
+Note:
+   You may get errors reported when running DriverTest, 
+in fact it may not run at all the first time, then 
+Vista will ask you if you wish to run it in compatability
+ mode. DO so, and it will run..
+
+

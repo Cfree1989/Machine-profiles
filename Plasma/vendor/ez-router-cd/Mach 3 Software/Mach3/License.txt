@@ -1,0 +1,112 @@
+READ CAREFULLY!
+
+This LazyCam CNC  for Windows End-User License Agreement
+("Agreement") is a legal agreement between you (either an individual
+or a single entity known as "Customer") and ArtSoft Software Corporation. By installing, 
+copying, or otherwise using the Software or any Software Updates,
+ Customer agrees to be bound by the terms of this Agreement.
+ If Customer does not agree to the terms of this Agreement, do not 
+install, copy, or use the Software, including all Software Updates
+ that Customer received as part of the Software (each, an "Update").
+ By installing, copying, or  otherwise using an Update, 
+Customer agrees to be bound by the additional license terms
+that accompany such Update. If Customer does not agree to the terms of
+the additional license terms that accompany the Update, disregard the
+Update and the additional license terms that accompany the Update. In
+this event, Customer's rights to use the Software shall continue to be
+governed by the then-existing Agreement.
+
+0-0)
+
+   This documents intent and function is to inform the user that NO legal
+liabilities exist for the use of this software. Using any CNC machine is , 
+at best, a hazardous operation. All safety precautions must be taken as 
+machines can come to life at any time, software CAN malfucntion at any time, 
+any user of the LazyCam software must understand and respect this, and must
+delete the software immediately and not continue with installation unless 
+they fully understand all implications of use, and the fact that no legal 
+recourse exists in the case of wrongfull use, improper code, unexpected 
+movement, or any damage caused by the afore mentioned effects. 
+
+0. Useage limitations
+
+A user may, for his own personal use , use the software license for LazyCam 
+on as many computers as he owns and thereby drive as many machines as he owns. 
+In a comercial environment, each machine must have its own license key file.  
+A license may be used to activate the program for simulation use 
+(not driving a machine) on as many computers as the registrant owns 
+regardless of whether it is used in a commercial environment or not.
+
+
+1. Copyright
+
+All title and copyrights in and to the Software (including but not
+limited to any software components, product documentation and associated
+media, sample files, extension files, tools and utilities, miscellaneous
+technical information, collectively referred to herein as the "Software"),
+and any copies of the Software, are owned by ArtSoft. The Software is
+protected by Canadian copyright laws and international treaty
+provisions. Therefore, you must treat the Software like any other
+copyrighted material. The Software is licensed, not sold.
+
+2. Grant of License
+	
+a. ArtSoft Software grants Customer a non-exclusive, worldwide license to use
+ ArtSoft's Windows computer software (the "Software")
+for the purpose of CNC machining or stepper motor control.
+
+b The customer  will  indemnify, hold harmless and
+defend ArtSoft from and against any claims or lawsuits, including
+attorney's fees, that arise or result from the use of this software.
+
+c. The customer will not allow this software to be run by any person that
+ has not had sufficient training in the use of the software. This training will be provided
+by the customer for future users.
+
+d. Customer may permanently transfer all of Customer's rights under
+this Agreement, provided Customer retains no copies, Customer transfers
+all of the Software (including all component parts, the media and
+printed materials, any upgrades, and this Agreement), Customer provides
+ArtSoft notice of Customer's name, company, and address and the name,
+company, and address of the person to whom Customer is transferring the
+rights granted herein 
+ 
+4. Termination
+
+a. Without prejudice to any other rights,ArtSoft may terminate this
+Agreement if Customer fails to comply with the terms and conditions of
+this Agreement. In such event, Customer must destroy all copies of the
+Software in any form and all of its component parts.
+
+5. Canadian Usage.
+
+  Users agree that this software may not be used within Canada unless purchased
+from a Canadian supplier or ArtSoft is notified. Should the software be purchased
+outside Canada and used within Canada, users are required simply to notify ArtSoft
+of its use within Canadian borders. 
+
+6. Disclaimer of Warranty
+
+a. NO WARRANTIES. THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF
+ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, Mach2
+DISCLAIMS ALL WARRANTIES, EXPRESSED OR IMPLIED, INCLUDING, BUT NOT
+LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE AND ANY WARRANTY AGAINST INFRINGEMENT, WITH REGARD
+TO THE SOFTWARE.  
+
+b. NO LIABILITY FOR DAMAGES. TO THE MAXIMUM EXTENT PERMITTED BY
+APPLICABLE LAW, IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR
+LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS
+INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE
+OR INABILITY TO USE THE SOFTWARE, EVEN IF THE AUTHOR HAS BEEN
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. 
+ 
+ 
+CUSTOMER ACKNOWLEDGES THAT CUSTOMER HAS READ THIS AGREEMENT,
+UNDERSTAND IT AND AGREES TO BE BOUND BY ITS TERMS AND
+CONDITIONS. CUSTOMER FURTHER AGREES THAT IT IS THE COMPLETE
+AND EXCLUSIVE STATEMENT OF THE AGREEMENT BETWEEN CUSTOMER
+AND AUTHOR WHICH SUPERSEDES ANY PROPOSAL OR PRIOR
+AGREEMENT, ORAL OR WRITTEN, AND ANY OTHER COMMUNICATIONS
+BETWEEN CUSTOMER ANDTHE AUTHOR  RELATING TO THE SOFTWARE.

@@ -1,0 +1,7 @@
+Install latest mach 3
+reboot
+Move old Mach3 folder to C: drive 
+Put sent es3 file in plugins folder
+Open Mach 3, enter IP 10.9.9.9 (table powered on), look for blue loading bar top left
+
+Function config - reset device selection

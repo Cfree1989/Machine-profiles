@@ -1,0 +1,91 @@
+;
+; ez-Router post processor
+;
+; 
+;
+;
+;
+; History
+;
+; Who When     What
+; === ======== ========================================
+; John J. 3-28-07  ez-Router
+; John J. 4-11-07  ez-Router Fixed cw-ccw-file name
+;
+DESCRIPTION = "ez-Router/Mach3(*.tap)"
+;
+FILE_EXTENSION = "tap"
+;
+UNITS = INCH
+;
+;
+; Cariage return - line feed at end of each line
+;
+END_OF_LINE = "[13][10]"
+;
+; Block numbering 
+;
+LINE_NUM_START     = 0
+LINE_NUM_INCREMENT = 5
+LINE_NUM_MAXIMUM   = 999999
+;
+; Set up default formating for variables
+;
+; Line numbering
+FORMAT = [N|@|N|1.0]
+; Spindle Speed
+FORMAT = [S|@|S|1.0]
+; Feed Rate
+FORMAT = [F|#|F|1.0]
+; Tool moves in x,y and z
+FORMAT = [X|#|X|1.3]
+FORMAT = [Y|#|Y|1.3]
+FORMAT = [Z|#|Z|1.3]
+; Arc Centre Cordinates
+FORMAT = [I|@|I|1.3]
+FORMAT = [J|@|J|1.3]
+; Home tool positions 
+FORMAT = [XH|@|X|1.3]
+FORMAT = [YH|@|Y|1.3]
+FORMAT = [ZH|@|Z|1.3]
+;
+; Set up program header
+;
+START = "([FILENAME])"
+START = "[N] G90 G20"
+START = "[N] G40 G80"
+START = "[N] G49"
+START = "[N] M06 T[T]"
+;M6T1 = tool change via macros (commented out)
+START = "[N] M03 [S]"
+START = "[N] M07"
+;M7 = turn Dust Collection on (commented out)
+;
+; Program moves
+;
+RAPID_RATE_MOVE        = "[N] G00[X] [Y] [Z]"
+FIRST_FEED_RATE_MOVE   = "[N] G01[X] [Y] [Z] [F]"
+FEED_RATE_MOVE         = "[N]    [X] [Y] [Z]"
+;
+; 
+FIRST_CW_ARC_MOVE      = "[N] G02[X] [Y] [I] [J] [F]"
+CW_ARC_MOVE            = "[N]    [X] [Y] [I] [J]"
+;
+;
+FIRST_CCW_ARC_MOVE     = "[N] G03[X] [Y] [I] [J] [F]"
+CCW_ARC_MOVE           = "[N]    [X] [Y] [I] [J]"
+;
+; Setup Toolchange commands
+;
+TOOLCHANGE             = "[N] G00[ZH]"
+TOOLCHANGE             = "[N] M05"
+TOOLCHANGE             = "[N] M06 T[T]"
+TOOLCHANGE             = "[N] M03 [S]"
+;
+; End of file
+;
+END                    = "[N] G00[ZH]"
+END                    = "[N] G00[XH] [YH]"
+END                    = "[N] M05"
+END                    = "[N] M30"
+

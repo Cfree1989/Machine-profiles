@@ -1,0 +1,1 @@
+Sub MainIf(GetUserLED(2100) = 1) Then 'This will check to see if Trial run Led is activeExit SubEnd IfIf(GetUserLED(2100) = 0) Then 'This will check to see if Trial run Led is Not activeActivateSignal(OUTPUT1)While IsMovingWendWhile Not IsActive(THCON)WendEnd IFEnd Sub             
