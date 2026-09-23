@@ -56,12 +56,12 @@ class VendorStructureTests(unittest.TestCase):
         self.assertTrue(IDX.is_file())
         self.assertTrue(BUNDLE.is_file())
         self.assertEqual(VENDOR.read_text(encoding="utf-8"), BUNDLE.read_text(encoding="utf-8"))
-        self.assertIn("0.1.20 ", IDX.read_text(encoding="utf-8"))
+        self.assertIn("0.1.21 ", IDX.read_text(encoding="utf-8"))
 
     def test_single_printer_model(self) -> None:
         self.assertEqual(self.ini["vendor"]["name"], "3D Potter (experimental)")
         self.assertEqual(self.ini["vendor"]["repo_id"], "non-prusa-fff")
-        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.20")
+        self.assertEqual(self.ini["vendor"]["config_version"], "0.1.21")
         model = self.ini["printer_model:POTTERBOT9"]
         self.assertEqual(model["variants"], "1;2;3;4;5;6;7;8;9;10")
         self.assertEqual(model["default_materials"], f"{CLAY};{CLAY_RETRACT}")
@@ -192,7 +192,8 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(p["solid_infill_speed"], "20")
         self.assertEqual(p["first_layer_speed"], "40")
         self.assertEqual(p["fill_density"], "0%")
-        self.assertEqual(p["fill_pattern"], "grid")
+        self.assertEqual(p["fill_pattern"], "line")
+        self.assertEqual(p["external_perimeters_first"], "1")
         self.assertEqual(p["bottom_fill_pattern"], "archimedeanchords")
         self.assertEqual(p["top_fill_pattern"], "archimedeanchords")
         self.assertEqual(p["complete_objects"], "1")
@@ -216,7 +217,7 @@ class VendorStructureTests(unittest.TestCase):
         infill = self.ini["print:Infill @Potterbot 5mm"]
         self.assertEqual(infill["spiral_vase"], "0")
         self.assertEqual(infill["fill_density"], "15%")
-        self.assertEqual(infill.get("fill_pattern") or self.ini["print:*common*"]["fill_pattern"], "grid")
+        self.assertEqual(infill.get("fill_pattern") or self.ini["print:*common*"]["fill_pattern"], "line")
         self.assertEqual(infill["bottom_solid_layers"], "3")
         self.assertEqual(infill["top_solid_layers"], "3")
         self.assertEqual(infill["avoid_crossing_perimeters"], "1")

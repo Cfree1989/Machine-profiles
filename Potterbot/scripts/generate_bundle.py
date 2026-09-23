@@ -10,7 +10,7 @@ VENDOR = ROOT / "vendor" / "Potterbot.ini"
 BUNDLE = ROOT / "profiles" / "Potterbot-9-bundle.ini"
 IDX = ROOT / "vendor" / "Potterbot.idx"
 
-CONFIG_VERSION = "0.1.20"
+CONFIG_VERSION = "0.1.21"
 MODEL_ID = "POTTERBOT9"
 NOZZLES = list(range(1, 11))
 BED_X = 381  # 15 in bat; firmware X travel is 420
@@ -332,11 +332,11 @@ def vendor_block() -> str:
             "ensure_vertical_shell_thickness = 0",
             f"external_perimeter_acceleration = {ACCEL_XY}",
             f"external_perimeter_speed = {PRINT_SPEED}",
-            "external_perimeters_first = 0",
+            "external_perimeters_first = 1",
             "extra_perimeters = 0",
             "fill_angle = 45",
             "fill_density = 0%",
-            "fill_pattern = grid",
+            "fill_pattern = line",
             f"first_layer_acceleration = {ACCEL_XY}",
             "first_layer_acceleration_over_raft = 0",
             f"first_layer_infill_speed = {BOTTOM_SPEED}",
@@ -357,7 +357,7 @@ def vendor_block() -> str:
             "max_print_speed = 85",
             "max_volumetric_speed = 0",
             "min_skirt_length = 0",
-            f"notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms and visible tops are Archimedean chords; sparse infill is grid. 15% infill overlap so bottoms meet the wall. Sequential printing (complete objects) is on: add each pot as its own object and keep 40 mm radius clearance. Post-process matches Cura clay volume and holds full ram flow on the first spiral loop. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). No fan / no heaters (cooling off). Retraction is chosen by filament: {CLAY} is unretracted (official Cura; vase profiles only), {CLAY_RETRACT} is {RETRACT_LENGTH} mm at {RETRACT_SPEED} mm/s with a {RETRACT_LIFT} mm hop after layer 0 and drops to Z{RETRACT_DROP_Z} after G28. Infill requires {CLAY_RETRACT}. End G-code lifts Z 10 mm and pulls E-500.",
+            f"notes = EXPERIMENTAL. Clay profiles for Potterbot 9. Layer height 1.5 mm from official 3D Potter Fine except the 1 mm nozzle (0.8 mm so extrusion width stays above layer height). Line width equals the installed nozzle. Bottoms and visible tops are Archimedean chords; sparse infill is Line; external perimeters print first. 15% infill overlap so bottoms meet the wall. Sequential printing (complete objects) is on: add each pot as its own object and keep 40 mm radius clearance. Post-process matches Cura clay volume and holds full ram flow on the first spiral loop. PrusaSlicer Preview draws flat clay beads as rounder tubes — the dark grid is the viewer, not missing clay. Speeds from official Cura (40 mm/s print, 80 travel, 20 bottom). Print/travel acceleration 3000 mm/s² matches firmware M201 (Cura jobs emit no M204). No fan / no heaters (cooling off). Retraction is chosen by filament: {CLAY} is unretracted (official Cura; vase profiles only), {CLAY_RETRACT} is {RETRACT_LENGTH} mm at {RETRACT_SPEED} mm/s with a {RETRACT_LIFT} mm hop after layer 0 and drops to Z{RETRACT_DROP_Z} after G28. Infill requires {CLAY_RETRACT}. End G-code lifts Z 10 mm and pulls E-500.",
             f"layer_height = {fmt_num(LAYER_HEIGHT)}",
             f"first_layer_height = {fmt_num(LAYER_HEIGHT)}",
             "only_retract_when_crossing_perimeters = 1",
@@ -455,12 +455,12 @@ def vendor_block() -> str:
                 "alias = Infill",
                 "spiral_vase = 0",
                 "fill_density = 15%",
-                "fill_pattern = grid",
+                "fill_pattern = line",
                 "bottom_solid_layers = 3",
                 "top_solid_layers = 3",
                 "avoid_crossing_perimeters = 1",
                 "infill_overlap = 15%",
-                f"notes = EXPERIMENTAL. Infill / multi-object clay. 15% grid infill, 3 Archimedean-chord bottoms, 3 Archimedean-chord tops. Internal bridges use a reduced flow so the first solid over sparse infill is a normal bead, not a round nozzle-diameter blob. Use the {CLAY_RETRACT} filament ({RETRACT_LENGTH} mm at {RETRACT_SPEED} mm/s, {RETRACT_LIFT} mm Z-hop after layer 0; its start G-code drops to Z{RETRACT_DROP_Z}). {CLAY} is not offered with this profile. Raise infill % on the plater if you need it. Sequential printing is on; space objects by 40 mm radius (full 400 mm height is allowed).",
+                f"notes = EXPERIMENTAL. Infill / multi-object clay. 15% Line infill, 3 Archimedean-chord bottoms, 3 Archimedean-chord tops. External perimeters print first. Internal bridges use a reduced flow so the first solid over sparse infill is a normal bead, not a round nozzle-diameter blob. Use the {CLAY_RETRACT} filament ({RETRACT_LENGTH} mm at {RETRACT_SPEED} mm/s, {RETRACT_LIFT} mm Z-hop after layer 0; its start G-code drops to Z{RETRACT_DROP_Z}). {CLAY} is not offered with this profile. Raise infill % on the plater if you need it. Sequential printing is on; space objects by 40 mm radius (full 400 mm height is allowed).",
                 *per_nozzle,
                 "",
             ]
@@ -565,8 +565,9 @@ def idx_text() -> str:
         "Sequential printing on (complete objects; clearance height 400 mm, radius 40 mm). "
         "pause.g on the Duet must park (lift 10 mm, X420 Y0) not home; slicer pause still emits M25. "
         "Cooling stays off (no fan, no heaters).\n"
-        f"{CONFIG_VERSION} Post-process script path is C:\\\\Repos\\\\Machine-profiles\\\\Potterbot\\\\scripts\\\\ "
+        "0.1.20 Post-process script path is C:\\\\Repos\\\\Machine-profiles\\\\Potterbot\\\\scripts\\\\ "
         "(repo folder renamed from Prusa-Slicer-Print-Profiles).\n"
+        f"{CONFIG_VERSION} Sparse infill is Line (was grid). External perimeters first.\n"
     )
 
 

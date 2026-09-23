@@ -196,7 +196,7 @@ End `E-500` at `F1000` is identical. Time is ram-dominated (~30 s for 500 mm at 
 | --- | --- | --- |
 | Hollow vase | 0 bottom, 0 top, spiral on | Vase Hollow: same |
 | 3-bottom vase | `bottom_layers = 3`, then spiral; `top_bottom_pattern = concentric` | Vase Bottom: 3 bottoms, spiral on; bottoms **and visible tops** Archimedean chords |
-| Infill | Official jobs: 0% | Extra **Infill** preset: 15% **grid**, 3 bottoms, 3 tops, spiral **off** |
+| Infill | Official jobs: 0% | Extra **Infill** preset: 15% **Line**, 3 bottoms, 3 tops, spiral **off**; `external_perimeters_first = 1` |
 | Walls | `wall_thickness` = nozzle (one wall) | `perimeters = 1`, widths = nozzle |
 | Wall generator | Cura 5.12 default Arachne (3mf is older `setting_version` 9) | `perimeter_generator = arachne` |
 | Fuzzy skin | Lab instructions: must be **off** | Not in the bundle (stays off) |
