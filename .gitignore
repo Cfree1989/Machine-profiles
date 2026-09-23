@@ -3,3 +3,6 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 Thumbs.db
+
+# Printer log exports contain the machine serial number.
+Raise3D/logs/

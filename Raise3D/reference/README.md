@@ -22,7 +22,8 @@ Known-good **ideaMaker** output lives in `ideamaker/`. PrusaSlicer start/end G-c
 
 ## This profile’s export (not start/end evidence)
 
-- `prusaslicer/Raise3DTest_0.4n_0.2mm_PLA_PRO2PLUS_HS_DUAL_3h2m.gcode` — current Dual profile export (2026-09-02)
+- `prusaslicer/Raise3DTest_0.4n_0.2mm_PLA_PRO2PLUS_HS_DUAL_3h2m.gcode` — Dual profile export (2026-09-02)
+- `prusaslicer/Base_0.4n_0.2mm_PLA_PRO2PLUS_HS_DUAL_2h0m.gcode` — later Dual export of the Base part (2026-09-23). Same profile; not a new start/end source.
 
 ## Community-derived (not Hyper Speed evidence)
 
