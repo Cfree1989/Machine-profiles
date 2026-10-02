@@ -6,6 +6,7 @@ One folder per printer. Each folder is self-contained: vendor bundle, importable
 | --- | --- | --- |
 | [Raise3D](Raise3D/README.md) | Pro2 Plus Hyper Speed, 0.4 mm dual | Experimental PrusaSlicer bundle |
 | [Potterbot](Potterbot/README.md) | 3D Potterbot 9 (Duet 2 WiFi) | Experimental PrusaSlicer bundle (one printer, 1–10 mm nozzles; Clay / Clay Retract filaments; vase hollow / vase bottom / infill) |
+| [PrusaXL](PrusaXL/docs/EXTRUDER_ERROR_17536.md) | Original Prusa XL, 2-tool | Notes only. Extruder error 17536. No slicer bundle yet. |
 
 Add a new printer as a sibling folder with the same layout (`vendor/`, `profiles/`, `docs/`, `reference/`). Do not put printer-specific G-code or post-process scripts at the repo root.
 
