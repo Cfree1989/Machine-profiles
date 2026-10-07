@@ -16,7 +16,7 @@ T1_MIN_X = 25.0
 MAX_HOTEND = 300.0
 MAX_BED = 120.0
 
-# SET_PRESSURE_ADVANCE is the Klipper command for the Copperhead PLA tune (ADVANCE=0.05).
+# SET_PRESSURE_ADVANCE is the Klipper command for the Copperhead tune (ADVANCE=0.04).
 KNOWN_CMD = re.compile(
     r"^(?:G\d+|M\d+|T[01]\b|SET_VELOCITY_LIMIT\b|SET_PRESSURE_ADVANCE\b)",
     re.I,
