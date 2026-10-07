@@ -42,6 +42,21 @@ class GcodeSafetyTests(unittest.TestCase):
         self.assertTrue(any("M92" in e for e in errors), joined)
         self.assertTrue(any("M600" in e for e in errors), joined)
 
+    def test_pressure_advance_is_allowed(self) -> None:
+        import tempfile
+
+        src = (FIXTURES / "dual_start_end.gcode").read_text(encoding="utf-8")
+        patched = src.replace(
+            "M1001\n",
+            "M1001\nSET_PRESSURE_ADVANCE ADVANCE=0.05\n",
+            1,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "pa.gcode"
+            path.write_text(patched, encoding="utf-8")
+            errors = validate(path)
+        self.assertEqual(errors, [], msg="\n".join(errors))
+
     def test_non_gcode_line_after_m1001_fails(self) -> None:
         import tempfile
 

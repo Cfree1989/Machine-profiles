@@ -111,7 +111,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertNotIn(";Filament Name #1: PLA\n", start)
         self.assertNotIn('{"[Raise3D] PLA"}', start)
         self.assertIn("filament_extruder_id", self.ini["filament:*common*"]["start_filament_gcode"])
-        self.assertNotIn("SET_PRESSURE_ADVANCE", self.ini["filament:*common*"]["start_filament_gcode"])
+        self.assertIn("SET_PRESSURE_ADVANCE ADVANCE=0.05", self.ini["filament:*common*"]["start_filament_gcode"])
         self.assertEqual(filament["temperature"], "230")
         self.assertEqual(filament["first_layer_temperature"], "230")
         self.assertEqual(filament.get("extrusion_multiplier") or self.ini["filament:*common*"]["extrusion_multiplier"], "1")
@@ -235,7 +235,7 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(p["infill_acceleration"], "5000")
         self.assertEqual(p["solid_infill_acceleration"], "2000")
         self.assertEqual(p["top_solid_infill_acceleration"], "2000")
-        self.assertEqual(p["elefant_foot_compensation"], "0.20")
+        self.assertEqual(p["elefant_foot_compensation"], "0")
         self.assertLess(int(p["first_layer_speed"]), int(p["perimeter_speed"]))
         self.assertLess(int(p["first_layer_infill_speed"]), int(p["infill_speed"]))
         self.assertEqual(p["wipe_tower"], "1")
@@ -305,10 +305,10 @@ class VendorStructureTests(unittest.TestCase):
         self.assertEqual(self.ini["filament:*common*"]["min_print_speed"], "15")
         self.assertEqual(pla["filament_max_volumetric_speed"], "15")
         pla_start = pla.get("start_filament_gcode") or self.ini["filament:*common*"]["start_filament_gcode"]
-        self.assertNotIn("SET_PRESSURE_ADVANCE", pla_start)
+        self.assertIn("SET_PRESSURE_ADVANCE ADVANCE=0.05", pla_start)
         self.assertIn("M221 T{filament_extruder_id} S94", pla_start)
         petg_start = self.ini["filament:PETG Raise3D"].get("start_filament_gcode") or self.ini["filament:*common*"]["start_filament_gcode"]
-        self.assertNotIn("SET_PRESSURE_ADVANCE", petg_start)
+        self.assertIn("SET_PRESSURE_ADVANCE ADVANCE=0.05", petg_start)
         self.assertEqual(self.ini["filament:*common*"]["filament_cost"], "100")
         self.assertEqual(self.ini["filament:*common*"]["filament_spool_weight"], "135")
         petg = self.ini["filament:PETG Raise3D"]

@@ -16,7 +16,11 @@ T1_MIN_X = 25.0
 MAX_HOTEND = 300.0
 MAX_BED = 120.0
 
-KNOWN_CMD = re.compile(r"^(?:G\d+|M\d+|T[01]\b|SET_VELOCITY_LIMIT\b)", re.I)
+# SET_PRESSURE_ADVANCE is the Klipper command for the Copperhead PLA tune (ADVANCE=0.05).
+KNOWN_CMD = re.compile(
+    r"^(?:G\d+|M\d+|T[01]\b|SET_VELOCITY_LIMIT\b|SET_PRESSURE_ADVANCE\b)",
+    re.I,
+)
 FORBIDDEN = [
     (re.compile(r"^G29\b", re.I), "G29 bed mesh/level is not in the ideaMaker reference"),
     (re.compile(r"^M92\b", re.I), "M92 would overwrite firmware calibrations"),
